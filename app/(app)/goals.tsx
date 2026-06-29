@@ -24,6 +24,7 @@ import { ComicButton } from '../../src/components/ComicButton';
 import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { useDialog } from '../../src/components/Dialog';
+import { GoalSuggestions } from '../../src/components/GoalSuggestions';
 import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
 interface GoalWithRate extends Goal { rate7: number }
@@ -76,6 +77,16 @@ export default function GoalsScreen() {
     const g = await addGoal(user.id, newTitle.trim().slice(0, MAX_GOAL_LEN), 'habit');
     setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
     setNewTitle('');
+    setAdding(false);
+  };
+
+  // Agrega una meta sugerida directo (sin escribir).
+  const addSuggestion = async (text: string) => {
+    if (!user || adding || goals.length >= 5) return;
+    if (goals.some((g) => g.title === text)) return;
+    setAdding(true);
+    const g = await addGoal(user.id, text.slice(0, MAX_GOAL_LEN), 'habit');
+    setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
     setAdding(false);
   };
 
@@ -208,6 +219,10 @@ export default function GoalsScreen() {
                   disabled={!newTitle.trim() || adding}
                   onPress={handleAdd}
                 />
+
+                <View style={{ marginTop: 16 }}>
+                  <GoalSuggestions accent={accent} onPick={addSuggestion} used={goals.map((g) => g.title)} />
+                </View>
               </Card>
             ) : (
               <Card alt elevation={0} style={{ padding: 14, marginTop: 8 }}>

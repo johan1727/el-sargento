@@ -19,6 +19,7 @@ import { ComicButton } from '../../src/components/ComicButton';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { Card } from '../../src/components/Card';
 import { useDialog } from '../../src/components/Dialog';
+import { GoalSuggestions } from '../../src/components/GoalSuggestions';
 import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
 export let pendingGoals: { title: string; type: 'habit' | 'project' }[] = [];
@@ -44,6 +45,17 @@ export default function OnboardingGoalsScreen() {
 
   const removeGoal = (idx: number) => {
     setGoals((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Chip sugerido: rellena el primer slot vacío, o agrega uno nuevo (máx 5).
+  const pickSuggestion = (text: string) => {
+    setGoals((prev) => {
+      if (prev.some((g) => g.trim() === text)) return prev;
+      const emptyIdx = prev.findIndex((g) => !g.trim());
+      if (emptyIdx >= 0) return prev.map((g, i) => (i === emptyIdx ? text : g));
+      if (prev.length < 5) return [...prev, text];
+      return prev;
+    });
   };
 
   const handleNext = () => {
@@ -138,6 +150,10 @@ export default function OnboardingGoalsScreen() {
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: accent }}>Agregar otra meta</Text>
           </Pressable>
         ) : null}
+
+        <View style={{ marginBottom: 24 }}>
+          <GoalSuggestions accent={accent} onPick={pickSuggestion} used={goals.map((g) => g.trim())} />
+        </View>
 
         <View style={{ marginTop: 12, gap: 12 }}>
           <ComicButton label="SIGUIENTE → HORARIO" color={accent} textColor="#0B0E13" fullWidth size="lg" onPress={handleNext} />

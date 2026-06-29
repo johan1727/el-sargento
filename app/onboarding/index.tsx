@@ -17,7 +17,7 @@ import { CHARACTER_LIST, type SergeantId } from '../../src/constants/characters'
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { ComicButton } from '../../src/components/ComicButton';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../../src/constants/theme';
-import { speak, stopSpeech } from '../../src/lib/tts';
+import { playSampleVoice, stopSpeech } from '../../src/lib/tts';
 
 // Guardamos la elección en módulo para que el paso siguiente la lea.
 export let pendingSergeantId: SergeantId = 'gomez';
@@ -27,14 +27,16 @@ export default function OnboardingSelectScreen() {
   const [selected, setSelected] = useState<SergeantId>('gomez');
   const [playing, setPlaying] = useState<SergeantId | null>(null);
 
-  const handleListen = async (id: SergeantId, sample: string) => {
+  const handleListen = async (id: SergeantId) => {
     if (playing === id) {
       await stopSpeech();
       setPlaying(null);
       return;
     }
     setPlaying(id);
-    await speak(sample, id);
+    // Asset empaquetado → 0 API. No esperamos al final del clip; el botón vuelve
+    // a su estado y "stopSpeech" lo corta si lo tocan de nuevo.
+    await playSampleVoice(id);
     setPlaying(null);
   };
 
@@ -105,7 +107,7 @@ export default function OnboardingSelectScreen() {
                   </View>
                   <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, lineHeight: 18 }}>{c.tagline}</Text>
                   <Pressable
-                    onPress={() => handleListen(c.id, c.sampleLine)}
+                    onPress={() => handleListen(c.id)}
                     style={{
                       marginTop: 8,
                       flexDirection: 'row',

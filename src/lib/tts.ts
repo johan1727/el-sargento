@@ -192,3 +192,43 @@ export async function speak(text: string, sergeantId: SergeantId): Promise<void>
   const result = await generateSpeech(text, sergeantId);
   await playSpeech(result);
 }
+
+// ── Voces de muestra PRE-DESCARGADAS ───────────────────────────
+// Clips fijos del onboarding ("Escuchar"), generados una vez y empaquetados.
+// Reproducirlos NO gasta API (a diferencia de speak()). Ver assets/voices/.
+const SAMPLE_VOICES: Record<SergeantId, number> = {
+  gomez: require('../../assets/voices/gomez.wav'),
+  rex: require('../../assets/voices/rex.wav'),
+  valentina: require('../../assets/voices/valentina.wav'),
+  fabianski: require('../../assets/voices/fabianski.wav'),
+};
+
+/**
+ * Reproduce la muestra de voz del sargento desde el asset empaquetado (0 API).
+ * En web cae a la voz on-device (expo-speech) porque expo-av no reproduce
+ * nuestros WAV de forma fiable en navegador.
+ */
+export async function playSampleVoice(sergeantId: SergeantId): Promise<void> {
+  await stopSpeech();
+  const character = getCharacter(sergeantId);
+
+  if (Platform.OS === 'web') {
+    speakFallback(character.sampleLine, sergeantId);
+    return;
+  }
+
+  try {
+    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
+    const { sound } = await Audio.Sound.createAsync(SAMPLE_VOICES[sergeantId], { shouldPlay: true });
+    currentSound = sound;
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        sound.unloadAsync().catch(() => {});
+        if (currentSound === sound) currentSound = null;
+      }
+    });
+  } catch (err) {
+    if (__DEV__) console.warn('[tts] sample playback error', err);
+    speakFallback(character.sampleLine, sergeantId);
+  }
+}
