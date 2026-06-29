@@ -56,6 +56,9 @@ export function ComicButton({
         onPress?.(e);
       }}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
       style={{
         alignSelf: fullWidth ? 'stretch' : 'flex-start',
         transform: [{ scale: pressed ? 0.97 : 1 }],

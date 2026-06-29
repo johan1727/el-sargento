@@ -259,6 +259,23 @@ export async function getRecentMessages(
   return ((data ?? []) as Message[]).reverse();
 }
 
+/** Mensajes anteriores a una fecha (paginación hacia atrás del chat). */
+export async function getMessagesBefore(
+  userId: string,
+  beforeCreatedAt: string,
+  limit = 30,
+): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('sg_messages')
+    .select('*')
+    .eq('user_id', userId)
+    .lt('created_at', beforeCreatedAt)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as Message[]).reverse();
+}
+
 export async function addMessage(
   userId: string,
   msg: {

@@ -13,9 +13,11 @@ interface Props {
   onToggle: () => void;
   accent?: string;
   size?: number;
+  /** descripción para lectores de pantalla (p.ej. el título de la meta) */
+  label?: string;
 }
 
-export function ComicCheckbox({ checked, onToggle, accent = '#3DDC97', size = 30 }: Props) {
+export function ComicCheckbox({ checked, onToggle, accent = '#3DDC97', size = 30, label }: Props) {
   const pop = useRef(new Animated.Value(checked ? 1 : 0)).current;
 
   useEffect(() => {
@@ -35,7 +37,13 @@ export function ComicCheckbox({ checked, onToggle, accent = '#3DDC97', size = 30
   };
 
   return (
-    <Pressable onPress={handle} hitSlop={10}>
+    <Pressable
+      onPress={handle}
+      hitSlop={10}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={label ? `Meta: ${label}` : 'Marcar meta cumplida'}
+    >
       <View
         style={[
           {

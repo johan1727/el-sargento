@@ -26,6 +26,7 @@ import { useSession } from '../../src/store/session';
 import { getCharacter } from '../../src/constants/characters';
 import {
   getRecentMessages,
+  getMessagesBefore,
   addMessage,
   countUserMessagesToday,
   getGoalsWithToday,
@@ -58,8 +59,14 @@ export default function ChatScreen() {
   const [aiOffline, setAiOffline] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [msgCount, setMsgCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const listRef = useRef<FlatList>(null);
   const recorderRef = useRef<Audio.Recording | null>(null);
+  // Evita el auto-scroll al fondo cuando prependemos mensajes viejos (paginación).
+  const suppressScrollRef = useRef(false);
+
+  const PAGE = 30;
 
   const isPremium = profile ? hasFullAccess(profile) : false;
   const limitReached = !isPremium && msgCount >= FREE_DAILY_MESSAGE_LIMIT;
@@ -68,15 +75,34 @@ export default function ChatScreen() {
     if (!user || !profile) return;
     (async () => {
       const [msgs, count] = await Promise.all([
-        getRecentMessages(user.id, 30),
+        getRecentMessages(user.id, PAGE),
         countUserMessagesToday(user.id),
       ]);
       setMessages(msgs);
       setMsgCount(count);
+      setHasMore(msgs.length >= PAGE);
     })();
   }, [user, profile]);
 
+  // Paginación: carga mensajes anteriores (al tocar "Cargar anteriores").
+  const loadMore = useCallback(async () => {
+    if (!user || loadingMore || !hasMore || !messages.length) return;
+    setLoadingMore(true);
+    const oldest = messages[0];
+    const older = await getMessagesBefore(user.id, oldest.created_at, PAGE);
+    if (older.length) {
+      suppressScrollRef.current = true; // no saltar al fondo al prepender
+      setMessages((prev) => [...older, ...prev]);
+    }
+    if (older.length < PAGE) setHasMore(false);
+    setLoadingMore(false);
+  }, [user, loadingMore, hasMore, messages]);
+
   const scrollToBottom = () => {
+    if (suppressScrollRef.current) {
+      suppressScrollRef.current = false;
+      return;
+    }
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
@@ -244,6 +270,23 @@ export default function ChatScreen() {
           contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
+          ListHeaderComponent={
+            hasMore ? (
+              <Pressable
+                onPress={loadMore}
+                disabled={loadingMore}
+                accessibilityRole="button"
+                accessibilityLabel="Cargar mensajes anteriores"
+                style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, marginBottom: 4 }}
+              >
+                {loadingMore ? (
+                  <ActivityIndicator size="small" color={accent} />
+                ) : (
+                  <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim }}>↑ Cargar anteriores</Text>
+                )}
+              </Pressable>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={{ alignItems: 'center', marginTop: 48 }}>
               <Text style={{ fontSize: 40 }}>{character.emoji}</Text>
@@ -291,6 +334,8 @@ export default function ChatScreen() {
             onPressIn={() => { if (!transcribing) startRecording(); }}
             onPressOut={stopRecording}
             disabled={transcribing}
+            accessibilityRole="button"
+            accessibilityLabel={recording ? 'Detener grabación de voz' : 'Mantén para grabar un mensaje de voz'}
             style={[
               {
                 width: 48,
@@ -341,6 +386,8 @@ export default function ChatScreen() {
           <Pressable
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || sending || limitReached}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar mensaje"
             style={[
               {
                 width: 48,

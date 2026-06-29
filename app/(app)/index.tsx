@@ -42,6 +42,7 @@ import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { WeekStrip } from '../../src/components/WeekStrip';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
+import { Skeleton } from '../../src/components/Skeleton';
 import { DARK, FONTS, RADIUS, accentGlow, greetingForHour, tint } from '../../src/constants/theme';
 
 export default function HomeScreen() {
@@ -163,11 +164,21 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={accent} />
-        <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, marginTop: 14, letterSpacing: 1 }}>
-          CARGANDO, RECLUTA...
-        </Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }}>
+        <View style={{ padding: 16, gap: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Skeleton width={52} height={52} radius={26} />
+            <View style={{ flex: 1, gap: 8 }}>
+              <Skeleton width="50%" height={18} radius={RADIUS.sm} />
+              <Skeleton width="35%" height={14} radius={RADIUS.sm} />
+            </View>
+          </View>
+          <Skeleton height={150} radius={RADIUS.xl} />
+          <Skeleton height={64} radius={RADIUS.lg} />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={68} radius={RADIUS.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
@@ -322,7 +333,7 @@ export default function HomeScreen() {
                     <View style={{ width: 4, alignSelf: 'stretch', backgroundColor: done ? accent : tint(accent, 0.35) }} />
                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}>
                       <View pointerEvents="none">
-                        <ComicCheckbox checked={done} onToggle={() => handleToggle(goal)} accent={accent} />
+                        <ComicCheckbox checked={done} onToggle={() => handleToggle(goal)} accent={accent} label={goal.title} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text

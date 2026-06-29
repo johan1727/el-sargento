@@ -4,7 +4,6 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -25,6 +24,7 @@ import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { useDialog } from '../../src/components/Dialog';
 import { GoalSuggestions } from '../../src/components/GoalSuggestions';
+import { Skeleton } from '../../src/components/Skeleton';
 import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
 interface GoalWithRate extends Goal { rate7: number }
@@ -110,8 +110,14 @@ export default function GoalsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg, alignItems: 'center', justifyContent: 'center' }} edges={['top']}>
-        <ActivityIndicator size="large" color={accent} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
+        <SergeantHeader character={character} subtitle="Seguimiento 7 días" />
+        <View style={{ padding: 16, gap: 12 }}>
+          <Skeleton width="55%" height={32} radius={RADIUS.sm} style={{ marginBottom: 8 }} />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={140} radius={RADIUS.lg} />
+          ))}
+        </View>
       </SafeAreaView>
     );
   }
