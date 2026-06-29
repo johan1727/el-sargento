@@ -11,6 +11,7 @@ export const es = {
     error: 'Error',
     loadingRecruit: 'CARGANDO, RECLUTA...',
     or: 'O',
+    lastUpdated: 'Última actualización',
   },
   onboarding: {
     subtitle: 'Coach militar de productividad',

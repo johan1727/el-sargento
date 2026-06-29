@@ -2,6 +2,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { t } from '../i18n';
 import { DARK, FONTS } from '../constants/theme';
 
 export interface LegalSection {
@@ -37,7 +38,7 @@ export function LegalScreen({ title, updated, sections }: { title: string; updat
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
         <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted, marginBottom: 20 }}>
-          Última actualización: {updated}
+          {t('common.lastUpdated')}: {updated}
         </Text>
         {sections.map((s, i) => (
           <View key={i} style={{ marginBottom: 20 }}>

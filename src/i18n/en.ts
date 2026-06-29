@@ -11,6 +11,7 @@ export const en = {
     error: 'Error',
     loadingRecruit: 'LOADING, RECRUIT...',
     or: 'OR',
+    lastUpdated: 'Last updated',
   },
   onboarding: {
     subtitle: 'Military productivity coach',

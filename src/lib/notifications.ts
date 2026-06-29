@@ -15,6 +15,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { SergeantId } from '../constants/characters';
 import { CHARACTERS } from '../constants/characters';
+import { appLocale } from '../i18n';
 
 // Handler global — mostrar notificaciones aunque la app esté en foreground.
 if (Platform.OS !== 'web') {
@@ -63,8 +64,31 @@ const CHECKIN_MESSAGES: Record<SergeantId, string[]> = {
   ],
 };
 
+const CHECKIN_MESSAGES_EN: Record<SergeantId, string[]> = {
+  gomez: [
+    'Report time, recruit! Did you hit your goals?',
+    'Your word is your honor. What about today\'s goals?',
+    'Report in, recruit! Those who deliver, advance.',
+  ],
+  rex: [
+    'MOVE IT, SOLDIER! Check-in NOW! 🐶',
+    'WHAT IS THIS?! NO REPORT! WOOF! REPORT NOW!',
+    "LET'S GO! Goals don't hit themselves! MOVE!",
+  ],
+  valentina: [
+    'Check-in time, sweetie. I expect good news… or the consequences.',
+    'Did you hit your goals? We\'ll soon see if you talk or act.',
+    'Check-in, treasure. Don\'t keep me waiting.',
+  ],
+  fabianski: [
+    'Sweetie, I\'m waiting for your check-in. *dramatic sigh* Did you deliver or break my heart?',
+    'OH! Report time, my dear! Tell me everything!',
+    'The goals? Done? The check-in can\'t be ignored, sweetie.',
+  ],
+};
+
 function randomMessage(sergeantId: SergeantId): string {
-  const pool = CHECKIN_MESSAGES[sergeantId];
+  const pool = (appLocale() === 'en' ? CHECKIN_MESSAGES_EN : CHECKIN_MESSAGES)[sergeantId];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
