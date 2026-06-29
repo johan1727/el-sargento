@@ -125,9 +125,15 @@ Defaults de `sg_profiles` (los pone el trigger `sg_handle_new_user`):
   email-confirmation está ON (`needsConfirmation`) y pide confirmar el correo en vez
   de fallar en silencio. Reset de contraseña en el login.
 - **Modo invitado** (`signInAsGuest` = auth anónima de Supabase). Botón "Probar sin
-  cuenta" en signup. El invitado obtiene user real + trial, así todo funciona igual.
-  En Ajustes puede convertir la cuenta a email+password (`upgradeAccount` = updateUser,
-  mismo user_id → migración automática sin perder datos). `isGuest` en el contexto.
+  cuenta" en signup. Es **solo para VER la app y anotar metas** — las funciones de IA
+  (chat, voz, y el Live futuro) están **bloqueadas para invitados** e incitan a crear
+  cuenta. Detalle:
+  - El guard NO manda al invitado al paywall (rueda libre para que la pruebe).
+  - Chat: pantalla bloqueada con CTA "CREAR MI CUENTA" (no llega al input).
+  - Cuartel: saludo y reacciones usan `fallbackReply` (0 tokens) si `isGuest`; banner
+    de nudge "Estás de invitado → Crear cuenta".
+  - En Ajustes convierte la cuenta a email+password (`upgradeAccount` = updateUser,
+    mismo user_id → migración automática sin perder datos). `isGuest` en el contexto.
 - **Config pendiente en dashboards (tú):**
   - Supabase → Auth → Providers → Google: ON, con los Client IDs de Google Cloud.
   - Supabase → Auth → Sign In / Providers → **Anonymous sign-ins: ON** (para el modo invitado).

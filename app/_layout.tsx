@@ -25,7 +25,7 @@ import { hasFullAccess } from '../src/lib/streak';
 import { DARK } from '../src/constants/theme';
 
 function NavigationGuard({ children }: { children: React.ReactNode }) {
-  const { loading, session, profile } = useSession();
+  const { loading, session, profile, isGuest } = useSession();
   const router = useRouter();
   const segments = useSegments();
 
@@ -50,7 +50,10 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (profile && !hasFullAccess(profile)) {
+    // El invitado (anónimo) rueda libre por la app para que la pruebe; las
+    // funciones buenas (chat IA, voz) se bloquean dentro y lo incitan a crear
+    // cuenta. No lo mandamos al paywall.
+    if (profile && !isGuest && !hasFullAccess(profile)) {
       if (!inPaywall) router.replace('/paywall');
       return;
     }

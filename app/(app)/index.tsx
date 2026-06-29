@@ -32,7 +32,7 @@ import {
   checkDemotion,
   rankDelta,
 } from '../../src/lib/streak';
-import { generateSergeantReply } from '../../src/lib/gemini';
+import { generateSergeantReply, fallbackReply } from '../../src/lib/gemini';
 import { rankForStreak } from '../../src/constants/ranks';
 import type { GoalWithToday } from '../../src/types/database';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
@@ -47,7 +47,7 @@ import { DARK, FONTS, RADIUS, accentGlow, greetingForHour, tint } from '../../sr
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { profile, user, patchProfile } = useSession();
+  const { profile, user, patchProfile, isGuest } = useSession();
   const character = getCharacter(profile?.chosen_sergeant);
   const accent = character.theme.accent;
   const [goals, setGoals] = useState<GoalWithToday[]>([]);
@@ -90,16 +90,19 @@ export default function HomeScreen() {
         streak: profile.current_streak,
         goalsToday: [],
       };
-      const reply = await generateSergeantReply(
-        profile.chosen_sergeant,
-        [],
-        `Saluda al recluta: buenos ${greetingForHour(hour)}. Muy breve, 1 frase, en personaje. Menciona su rango o racha.`,
-        ctx,
-      );
-      setGreeting(reply.text);
+      // El invitado no gasta IA: saludo en personaje con el fallback local.
+      const greetingText = isGuest
+        ? fallbackReply(profile.chosen_sergeant, '', ctx)
+        : (await generateSergeantReply(
+            profile.chosen_sergeant,
+            [],
+            `Saluda al recluta: buenos ${greetingForHour(hour)}. Muy breve, 1 frase, en personaje. Menciona su rango o racha.`,
+            ctx,
+          )).text;
+      setGreeting(greetingText);
       setReactionLoading(false);
     })();
-  }, [user, profile, loadGoals, patchProfile]);
+  }, [user, profile, loadGoals, patchProfile, isGuest]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -152,8 +155,11 @@ export default function HomeScreen() {
         completed: g.id === goal.id ? nowCompleted : !!g.todayCheckin?.completed,
       })),
     };
-    const reply = await generateSergeantReply(profile.chosen_sergeant, [], prompt, ctx);
-    setReaction(reply.text);
+    // El invitado no gasta IA: reacción en personaje con el fallback local.
+    const reactionText = isGuest
+      ? fallbackReply(profile.chosen_sergeant, '', ctx)
+      : (await generateSergeantReply(profile.chosen_sergeant, [], prompt, ctx)).text;
+    setReaction(reactionText);
     setReactionLoading(false);
   };
 
@@ -199,6 +205,22 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />}
       >
+        {/* Nudge de invitado → incitar al login */}
+        {isGuest ? (
+          <Pressable onPress={() => router.push('/settings')} accessibilityRole="button" accessibilityLabel="Crear tu cuenta">
+            <Card accentColor={accent} tintOpacity={0.14} elevation={1} style={{ marginHorizontal: 16, marginTop: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: tint(accent, 0.5) }}>
+              <Text style={{ fontSize: 26 }}>👀</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: FONTS.bodyBlack, fontSize: 14, color: DARK.text }}>Estás de invitado</Text>
+                <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textDim, lineHeight: 17 }}>
+                  Crea tu cuenta para chat con IA, voz y guardar tu progreso.
+                </Text>
+              </View>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: accent }}>Crear →</Text>
+            </Card>
+          </Pressable>
+        ) : null}
+
         {/* ── TARJETA HÉROE: RACHA + PROGRESO DEL DÍA ── */}
         <Card accentColor={accent} tintOpacity={0.07} elevation={2} style={{ margin: 16, padding: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>

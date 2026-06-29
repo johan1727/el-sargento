@@ -9,6 +9,7 @@
  * - Gate premium: sin acceso pleno → máx 3 mensajes/día.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -39,6 +40,7 @@ import { ComicBubble } from '../../src/components/ComicBubble';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
 import { Card } from '../../src/components/Card';
+import { ComicButton } from '../../src/components/ComicButton';
 import { useDialog } from '../../src/components/Dialog';
 import { DARK, FONTS, RADIUS, accentGlow } from '../../src/constants/theme';
 
@@ -46,8 +48,9 @@ import { DARK, FONTS, RADIUS, accentGlow } from '../../src/constants/theme';
 const MAX_MESSAGE_LEN = 1000;
 
 export default function ChatScreen() {
-  const { user, profile } = useSession();
+  const { user, profile, isGuest } = useSession();
   const { show } = useDialog();
+  const router = useRouter();
   const character = getCharacter(profile?.chosen_sergeant);
   const accent = character.theme.accent;
 
@@ -249,6 +252,33 @@ export default function ChatScreen() {
       </View>
     );
   };
+
+  // Invitado: el chat con IA y la voz requieren cuenta. Lo incitamos a registrarse.
+  if (isGuest) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
+        <SergeantHeader character={character} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 8 }}>
+          <Text style={{ fontSize: 56 }}>🔒</Text>
+          <Text style={{ fontFamily: FONTS.display, fontSize: 30, color: DARK.text, letterSpacing: 1, textAlign: 'center' }}>
+            HABLA CON {character.name.toUpperCase()}
+          </Text>
+          <Text style={{ fontFamily: FONTS.body, fontSize: 15, color: DARK.textDim, textAlign: 'center', lineHeight: 22, marginBottom: 12 }}>
+            El chat con IA y la voz del sargento son para reclutas con cuenta. Crea la
+            tuya (gratis) y desbloquéalos al instante. Tu progreso se guarda.
+          </Text>
+          <ComicButton
+            label="CREAR MI CUENTA"
+            color={accent}
+            textColor="#0B0E13"
+            size="lg"
+            fullWidth
+            onPress={() => router.push('/settings')}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
