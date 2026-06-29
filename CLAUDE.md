@@ -171,6 +171,22 @@ el `mimeType 'audio/mp4'`, prueba `'audio/aac'`.
 - Activar RevenueCat real (instalar SDK + productos en las tiendas) — ver `purchases.ts`.
 - Poner `EXPO_PUBLIC_GEMINI_VIA_EDGE=true` y quitar la key del bundle en el build de prod.
 
+## i18n (español / inglés)
+
+`src/i18n/` (i18n-js + expo-localization). **Detecta el idioma del dispositivo** al
+arrancar: inglés si el cel está en inglés, español si no. Uso: `import { t } from
+'../i18n'` → `t('seccion.clave', { var })`. Diccionarios en `src/i18n/es.ts` y `en.ts`
+(mismas claves). `appLocale()` devuelve `'es'|'en'`.
+
+- **Contenido localizado vía helpers/campos:** `charTagline()` (characters), `rankLabel()`
+  (ranks), `suggestionLabel()` (goalSuggestions), `sampleLineEn`/`taglineEn`/`labelEn`.
+- **Sargentos en inglés:** `gemini.ts` inyecta una directiva de idioma en el prompt
+  (`langLine`) → Gemini responde en el idioma del usuario; `fallbackReply` tiene
+  `FALLBACKS_EN`. Voces de muestra del onboarding: `assets/voices/<id>_en.wav` (0 API).
+- **Legal:** `privacy.tsx`/`terms.tsx` tienen objetos `ES`/`EN` y eligen por `appLocale()`.
+- Al agregar texto nuevo: añade la clave a AMBOS diccionarios y usa `t()`. No hardcodees
+  español en JSX. (No hay toggle manual en ajustes aún — solo detección por dispositivo.)
+
 ## Convenciones
 
 - **NO uses `Alert.alert` nativo** (rompe el diseño dark). Usa el diálogo propio:
