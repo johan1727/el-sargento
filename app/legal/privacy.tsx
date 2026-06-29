@@ -4,11 +4,11 @@ export default function PrivacyScreen() {
   return (
     <LegalScreen
       title="PRIVACIDAD"
-      updated="28 de junio de 2026"
+      updated="29 de junio de 2026"
       sections={[
         {
-          h: '1. Quiénes somos',
-          b: 'El Sargento es una app de entretenimiento motivacional. Esta política explica qué datos tratamos y cómo. Contacto: jhonatanvillagomez38@gmail.com.',
+          h: '1. Quién es el responsable',
+          b: 'El Sargento es una app de entretenimiento motivacional operada por Jhonatan Villagómez (persona física), responsable del tratamiento de tus datos. Esta política explica qué datos tratamos y cómo. Contacto: jhonatanvillagomez38@gmail.com.',
         },
         {
           h: '2. Datos que recopilamos',
@@ -19,8 +19,8 @@ export default function PrivacyScreen() {
           b: 'Para crear tu cuenta, mostrar tu progreso, generar las respuestas del sargento y enviarte el recordatorio diario que tú configuras. No vendemos tus datos.',
         },
         {
-          h: '4. Proveedores',
-          b: 'Usamos Supabase (autenticación y base de datos) para guardar tu cuenta y tu progreso, y la API de Google Gemini para generar las respuestas del personaje. El texto de tus mensajes se envía a Gemini únicamente para producir la respuesta. Estos proveedores tratan los datos según sus propias políticas.',
+          h: '4. Proveedores y transferencias internacionales',
+          b: 'Usamos Supabase (autenticación y base de datos) para guardar tu cuenta y tu progreso, y la API de Google Gemini para generar las respuestas del personaje. El texto de tus mensajes se envía a Gemini únicamente para producir la respuesta. Como la app se distribuye internacionalmente, estos proveedores pueden procesar y almacenar datos en servidores ubicados fuera de tu país. Cada proveedor trata los datos según sus propias políticas de privacidad.',
         },
         {
           h: '5. Pagos',
