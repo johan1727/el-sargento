@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
-import { getRank, type RankId } from '../src/constants/ranks';
+import { getRank, rankLabel, type RankId } from '../src/constants/ranks';
+import { t } from '../src/i18n';
 import { useSession } from '../src/store/session';
 import { getCharacter } from '../src/constants/characters';
 import { ComicButton } from '../src/components/ComicButton';
@@ -84,11 +85,11 @@ export default function CelebrationScreen() {
             accentGlow(accent, 2),
           ]}
         >
-          <Text style={{ fontFamily: FONTS.display, fontSize: 36, color: '#0B0E13', letterSpacing: 2 }}>¡ASCENSO!</Text>
+          <Text style={{ fontFamily: FONTS.display, fontSize: 36, color: '#0B0E13', letterSpacing: 2 }}>{t('celebration.promotion')}</Text>
         </View>
 
         <Text style={{ fontFamily: FONTS.display, fontSize: 24, color: DARK.textDim, letterSpacing: 1, marginBottom: 14, textAlign: 'center' }}>
-          ¡ASCENDIDO A...!
+          {t('celebration.promotedTo')}
         </Text>
 
         {/* Badge animada */}
@@ -113,7 +114,7 @@ export default function CelebrationScreen() {
         </Animated.View>
 
         <Text style={{ fontFamily: FONTS.display, fontSize: 46, color: DARK.text, letterSpacing: 2, marginBottom: 8, textAlign: 'center' }}>
-          {r.label.toUpperCase()}
+          {rankLabel(r).toUpperCase()}
         </Text>
 
         {/* Avatar + felicitación */}
@@ -121,13 +122,13 @@ export default function CelebrationScreen() {
           <SergeantAvatar sergeantId={character.id} size={64} />
           <Card alt elevation={1} style={{ padding: 14, maxWidth: 220, borderColor: tint(accent, 0.4) }}>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, lineHeight: 21 }}>
-              ¡ASÍ SE HACE, RECLUTA!{'\n'}¡Eres {r.label}! {r.badge}
+              {t('celebration.wellDone')}{'\n'}{t('celebration.youAreNow', { rank: rankLabel(r), badge: r.badge })}
             </Text>
           </Card>
         </View>
 
         <ComicButton
-          label="¡A SEGUIR AVANZANDO!"
+          label={t('celebration.keepGoing')}
           color={accent}
           textColor="#0B0E13"
           size="lg"

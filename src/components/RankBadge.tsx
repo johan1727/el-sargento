@@ -1,7 +1,8 @@
 /** Insignia de rango + racha (🔥). Usada en headers y en /ranks — versión dark. */
 import { Text, View } from 'react-native';
 import { DARK, FONTS, RADIUS, softShadow } from '../constants/theme';
-import { getRank, type RankId } from '../constants/ranks';
+import { getRank, rankLabel, type RankId } from '../constants/ranks';
+import { t } from '../i18n';
 
 interface Props {
   rank: RankId;
@@ -41,11 +42,11 @@ export function RankBadge({ rank, streak, compact }: Props) {
             letterSpacing: 0.8,
           }}
         >
-          {r.label}
+          {rankLabel(r)}
         </Text>
         {typeof streak === 'number' ? (
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim }}>
-            🔥 {streak} día{streak === 1 ? '' : 's'}
+            🔥 {t('ranks.daysShort', { n: streak })}
           </Text>
         ) : null}
       </View>

@@ -129,10 +129,10 @@ export default function ChatScreen() {
     if (limitReached) {
       show({
         icon: '🔒',
-        title: 'Límite del día',
-        message: `Sin Premium, tienes ${FREE_DAILY_MESSAGE_LIMIT} mensajes por día. ¡Activa tu suscripción para hablar sin límites!`,
+        title: t('chat.limitTitle'),
+        message: t('chat.limitMsg', { n: FREE_DAILY_MESSAGE_LIMIT }),
         accent,
-        buttons: [{ text: 'Cerrar', style: 'cancel' }],
+        buttons: [{ text: t('common.close'), style: 'cancel' }],
       });
       return;
     }
@@ -173,13 +173,13 @@ export default function ChatScreen() {
   // ── Voz: grabar ───────────────────────────────────────────────
   const startRecording = async () => {
     if (!isPremium) {
-      show({ icon: '🔒', title: 'Solo Premium', message: 'La conversación por voz está disponible con suscripción activa.', accent });
+      show({ icon: '🔒', title: t('chat.premiumOnlyTitle'), message: t('chat.premiumOnlyMsg'), accent });
       return;
     }
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
-        show({ icon: '🎤', title: 'Permiso necesario', message: 'Necesitamos acceso al micrófono para escucharte.', accent });
+        show({ icon: '🎤', title: t('chat.permissionTitle'), message: t('chat.permissionMsg'), accent });
         return;
       }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -210,8 +210,8 @@ export default function ChatScreen() {
       } else {
         show({
           icon: '🎤',
-          title: 'No te entendí',
-          message: 'No pude transcribir el audio. Intenta de nuevo o escribe tu mensaje.',
+          title: t('chat.transcribeFailTitle'),
+          message: t('chat.transcribeFailMsg'),
           accent,
         });
       }
@@ -284,7 +284,7 @@ export default function ChatScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
       <SergeantHeader
         character={character}
-        subtitle={!isPremium ? `${Math.max(0, FREE_DAILY_MESSAGE_LIMIT - msgCount)} mensajes hoy` : undefined}
+        subtitle={!isPremium ? t('chat.messagesToday', { n: Math.max(0, FREE_DAILY_MESSAGE_LIMIT - msgCount) }) : undefined}
       />
 
       <KeyboardAvoidingView
@@ -312,7 +312,7 @@ export default function ChatScreen() {
                 {loadingMore ? (
                   <ActivityIndicator size="small" color={accent} />
                 ) : (
-                  <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim }}>↑ Cargar anteriores</Text>
+                  <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim }}>{t('chat.loadMore')}</Text>
                 )}
               </Pressable>
             ) : null
@@ -321,7 +321,7 @@ export default function ChatScreen() {
             <View style={{ alignItems: 'center', marginTop: 48 }}>
               <Text style={{ fontSize: 40 }}>{character.emoji}</Text>
               <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 16, color: DARK.textDim, marginTop: 12, textAlign: 'center' }}>
-                ¿Qué le dices a {character.name}?
+                {t('chat.empty', { name: character.name })}
               </Text>
             </View>
           }
@@ -342,7 +342,7 @@ export default function ChatScreen() {
           <View style={{ backgroundColor: 'rgba(245,184,67,0.14)', borderTopWidth: 1, borderTopColor: 'rgba(245,184,67,0.4)', paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ fontSize: 13 }}>⚠️</Text>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: '#F5B843', flex: 1 }}>
-              Sin conexión con la IA — respuesta offline del sargento.
+              {t('chat.offlineBanner')}
             </Text>
           </View>
         ) : null}
@@ -391,7 +391,7 @@ export default function ChatScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder={limitReached ? 'Límite diario alcanzado' : 'Escríbele al sargento...'}
+            placeholder={limitReached ? t('chat.limitPlaceholder') : t('chat.inputPlaceholder')}
             placeholderTextColor={DARK.textMuted}
             multiline
             maxLength={MAX_MESSAGE_LEN}

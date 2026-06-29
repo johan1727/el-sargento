@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSession } from '../../src/store/session';
 import { getCharacter } from '../../src/constants/characters';
-import { RANKS, rankIndex, getRank, nextRankProgress } from '../../src/constants/ranks';
+import { RANKS, rankIndex, getRank, nextRankProgress, rankLabel } from '../../src/constants/ranks';
+import { t } from '../../src/i18n';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
 import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
@@ -30,7 +31,7 @@ export default function RanksScreen() {
         {/* Rango actual */}
         <Card accentColor={accent} tintOpacity={0.08} elevation={2} style={{ margin: 16, padding: 22 }}>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.5, marginBottom: 10 }}>
-            RANGO ACTUAL
+            {t('ranks.currentRank')}
           </Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
@@ -53,13 +54,13 @@ export default function RanksScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: FONTS.display, fontSize: 36, color: DARK.text, letterSpacing: 1, lineHeight: 38 }}>
-                {currentRank.label.toUpperCase()}
+                {rankLabel(currentRank).toUpperCase()}
               </Text>
               <Text style={{ fontFamily: FONTS.display, fontSize: 40, color: accent, lineHeight: 42, letterSpacing: -0.5 }}>
                 🔥 {streak}
               </Text>
               <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted }}>
-                días de racha · Récord: {profile?.longest_streak ?? 0}
+                {t('ranks.streakRecord', { n: profile?.longest_streak ?? 0 })}
               </Text>
             </View>
           </View>
@@ -68,10 +69,10 @@ export default function RanksScreen() {
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
                 <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim }}>
-                  → {next.label} {next.badge}
+                  → {rankLabel(next)} {next.badge}
                 </Text>
                 <Text style={{ fontFamily: FONTS.display, fontSize: 16, color: accent, letterSpacing: 0.5 }}>
-                  {daysToNext} día{daysToNext === 1 ? '' : 's'}
+                  {t('ranks.daysShort', { n: daysToNext })}
                 </Text>
               </View>
               <ProgressBar value={(streak / next.minStreak) * 100} color={accent} height={10} />
@@ -81,7 +82,7 @@ export default function RanksScreen() {
 
         {/* Camino de rangos */}
         <Text style={{ fontFamily: FONTS.display, fontSize: 24, color: DARK.text, letterSpacing: 1, marginHorizontal: 16, marginBottom: 12 }}>
-          CAMINO AL GENERALATO
+          {t('ranks.path')}
         </Text>
 
         <View style={{ paddingHorizontal: 16 }}>
@@ -151,8 +152,8 @@ export default function RanksScreen() {
                         letterSpacing: 0.8,
                       }}
                     >
-                      {rank.label.toUpperCase()}
-                      {isCurrent ? '  ◀ AQUÍ' : ''}
+                      {rankLabel(rank).toUpperCase()}
+                      {isCurrent ? t('ranks.here') : ''}
                     </Text>
                     <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textMuted }}>
                       {rank.minStreak}d
@@ -160,7 +161,7 @@ export default function RanksScreen() {
                   </View>
                   {isCurrent ? (
                     <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textDim, marginTop: 2 }}>
-                      Racha mínima: {rank.minStreak} días
+                      {t('ranks.minStreak', { n: rank.minStreak })}
                     </Text>
                   ) : null}
                 </View>
@@ -171,13 +172,13 @@ export default function RanksScreen() {
 
         <Card alt elevation={0} style={{ padding: 14, margin: 16, borderColor: tint('#F5B843', 0.4) }}>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: '#F5B843' }}>
-            ⚠️ 3 días fallidos seguidos = bajas un rango. Sin excusas.
+            {t('ranks.demotionWarning')}
           </Text>
         </Card>
 
         <Card elevation={0} style={{ padding: 14, marginHorizontal: 16 }}>
           <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: DARK.textMuted, letterSpacing: 1 }}>
-            🏆 RANKING vs. AMIGOS — PRÓXIMAMENTE
+            {t('ranks.rankingSoon')}
           </Text>
         </Card>
       </ScrollView>

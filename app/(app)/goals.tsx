@@ -25,6 +25,7 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { useDialog } from '../../src/components/Dialog';
 import { GoalSuggestions } from '../../src/components/GoalSuggestions';
 import { Skeleton } from '../../src/components/Skeleton';
+import { t } from '../../src/i18n';
 import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
 interface GoalWithRate extends Goal { rate7: number }
@@ -39,10 +40,10 @@ function rateColor(rate: number) {
 }
 
 function sergeantComment(rate: number, title: string) {
-  if (rate >= 80) return `"${title}" va muy bien. Sigue.`;
-  if (rate >= 50) return `"${title}" a medias. Puedes más.`;
-  if (rate === 0) return `"${title}" está abandonada. ¿Por qué?`;
-  return `"${title}" necesita atención. Hoy no falles.`;
+  if (rate >= 80) return t('goals.comment80', { title });
+  if (rate >= 50) return t('goals.comment50', { title });
+  if (rate === 0) return t('goals.comment0', { title });
+  return t('goals.commentLow', { title });
 }
 
 export default function GoalsScreen() {
@@ -70,7 +71,7 @@ export default function GoalsScreen() {
   const handleAdd = async () => {
     if (!user || !newTitle.trim()) return;
     if (goals.length >= 5) {
-      show({ icon: character.emoji, title: 'Límite', message: `${character.name} dice: 5 metas máximo. Enfócate.`, accent });
+      show({ icon: character.emoji, title: t('goals.limitTitle'), message: t('goals.limitMsg', { name: character.name }), accent });
       return;
     }
     setAdding(true);
@@ -92,12 +93,12 @@ export default function GoalsScreen() {
 
   const handleRemove = (goal: GoalWithRate) => {
     show({
-      title: '¿Desactivar meta?',
-      message: `"${goal.title}" dejará de aparecer en tu check-in.`,
+      title: t('goals.removeTitle'),
+      message: t('goals.removeMsg', { title: goal.title }),
       buttons: [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Desactivar',
+          text: t('goals.deactivate'),
           style: 'destructive',
           onPress: async () => {
             await deactivateGoal(goal.id);
@@ -111,7 +112,7 @@ export default function GoalsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
-        <SergeantHeader character={character} subtitle="Seguimiento 7 días" />
+        <SergeantHeader character={character} subtitle={t('goals.subtitle')} />
         <View style={{ padding: 16, gap: 12 }}>
           <Skeleton width="55%" height={32} radius={RADIUS.sm} style={{ marginBottom: 8 }} />
           {[0, 1, 2].map((i) => (
@@ -124,7 +125,7 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
-      <SergeantHeader character={character} subtitle="Seguimiento 7 días" />
+      <SergeantHeader character={character} subtitle={t('goals.subtitle')} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <FlatList
@@ -134,7 +135,7 @@ export default function GoalsScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <Text style={{ fontFamily: FONTS.display, fontSize: 30, color: DARK.text, letterSpacing: 1, marginBottom: 4 }}>
-              TUS METAS 🎯
+              {t('goals.header')}
             </Text>
           }
           renderItem={({ item }) => {
@@ -145,7 +146,7 @@ export default function GoalsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 17, color: DARK.text }}>{item.title}</Text>
                     <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted, marginTop: 2 }}>
-                      {item.type === 'habit' ? 'Hábito' : 'Proyecto'} · últimos 7 días
+                      {item.type === 'habit' ? t('goals.habit') : t('goals.project')} · {t('goals.last7')}
                     </Text>
                   </View>
 
@@ -185,7 +186,7 @@ export default function GoalsScreen() {
                     borderColor: '#FF5A65',
                   }}
                 >
-                  <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: '#FF5A65' }}>Desactivar</Text>
+                  <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: '#FF5A65' }}>{t('goals.deactivate')}</Text>
                 </Pressable>
               </Card>
             );
@@ -194,12 +195,12 @@ export default function GoalsScreen() {
             goals.length < 5 ? (
               <Card elevation={1} style={{ padding: 16, marginTop: 4 }}>
                 <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 1, marginBottom: 12 }}>
-                  + AGREGAR META
+                  {t('goals.addTitle')}
                 </Text>
                 <TextInput
                   value={newTitle}
                   onChangeText={setNewTitle}
-                  placeholder="ej. Leer 20 páginas"
+                  placeholder={t('goals.addPlaceholder')}
                   placeholderTextColor={DARK.textMuted}
                   returnKeyType="done"
                   maxLength={MAX_GOAL_LEN}
@@ -218,7 +219,7 @@ export default function GoalsScreen() {
                   }}
                 />
                 <ComicButton
-                  label={adding ? 'AGREGANDO...' : 'AGREGAR META'}
+                  label={adding ? t('goals.addingBtn') : t('goals.addBtn')}
                   color={accent}
                   textColor="#0B0E13"
                   fullWidth
@@ -233,7 +234,7 @@ export default function GoalsScreen() {
             ) : (
               <Card alt elevation={0} style={{ padding: 14, marginTop: 8 }}>
                 <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textDim, textAlign: 'center' }}>
-                  5 metas al máximo. Desactiva una para agregar.
+                  {t('goals.maxReached')}
                 </Text>
               </Card>
             )

@@ -13,9 +13,13 @@ export type RankId =
   | 'capitan'
   | 'general';
 
+import { appLocale } from '../i18n';
+
 export interface Rank {
   id: RankId;
   label: string;
+  /** nombre del rango en inglés */
+  labelEn: string;
   /** insignia placeholder (emoji) — TODO: reemplazar con insignia ilustrada */
   badge: string;
   /** racha mínima para alcanzar este rango */
@@ -25,13 +29,18 @@ export interface Rank {
 }
 
 export const RANKS: Rank[] = [
-  { id: 'recluta', label: 'Recluta', badge: '🪖', minStreak: 0, color: '#9CA3AF' },
-  { id: 'cabo', label: 'Cabo', badge: '🎗️', minStreak: 3, color: '#A16207' },
-  { id: 'sargento', label: 'Sargento', badge: '🎖️', minStreak: 7, color: '#2E5E3A' },
-  { id: 'teniente', label: 'Teniente', badge: '⭐', minStreak: 15, color: '#1E3A8A' },
-  { id: 'capitan', label: 'Capitán', badge: '🏅', minStreak: 30, color: '#D6219B' },
-  { id: 'general', label: 'General', badge: '👑', minStreak: 60, color: '#E3B23C' },
+  { id: 'recluta', label: 'Recluta', labelEn: 'Recruit', badge: '🪖', minStreak: 0, color: '#9CA3AF' },
+  { id: 'cabo', label: 'Cabo', labelEn: 'Corporal', badge: '🎗️', minStreak: 3, color: '#A16207' },
+  { id: 'sargento', label: 'Sargento', labelEn: 'Sergeant', badge: '🎖️', minStreak: 7, color: '#2E5E3A' },
+  { id: 'teniente', label: 'Teniente', labelEn: 'Lieutenant', badge: '⭐', minStreak: 15, color: '#1E3A8A' },
+  { id: 'capitan', label: 'Capitán', labelEn: 'Captain', badge: '🏅', minStreak: 30, color: '#D6219B' },
+  { id: 'general', label: 'General', labelEn: 'General', badge: '👑', minStreak: 60, color: '#E3B23C' },
 ];
+
+/** Etiqueta del rango en el idioma activo. */
+export function rankLabel(rank: Rank): string {
+  return appLocale() === 'en' ? rank.labelEn : rank.label;
+}
 
 /** Devuelve el rango que corresponde a una racha dada. */
 export function rankForStreak(streak: number): Rank {

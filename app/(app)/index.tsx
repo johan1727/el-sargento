@@ -43,7 +43,7 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { WeekStrip } from '../../src/components/WeekStrip';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { Skeleton } from '../../src/components/Skeleton';
-import { t } from '../../src/i18n';
+import { t, appLocale } from '../../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, greetingForHour, tint } from '../../src/constants/theme';
 
 export default function HomeScreen() {
@@ -227,7 +227,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.5 }}>
-                RACHA ACTUAL
+                {t('home.streakNow')}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
                 <Text
@@ -248,7 +248,7 @@ export default function HomeScreen() {
               </View>
               {profile?.longest_streak && profile.longest_streak > 0 ? (
                 <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textMuted }}>
-                  Récord: {profile.longest_streak} días
+                  {t('home.record', { n: profile.longest_streak })}
                 </Text>
               ) : null}
             </View>
@@ -273,7 +273,7 @@ export default function HomeScreen() {
                 {completedCount}/{goals.length}
               </Text>
               <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 10, color: allDone ? '#0B0E13' : DARK.textDim, letterSpacing: 1 }}>
-                HOY
+                {t('home.today')}
               </Text>
             </View>
           </View>
@@ -303,7 +303,7 @@ export default function HomeScreen() {
                 <ActivityIndicator color={accent} />
               </Card>
             ) : (
-              <ComicBubble from="sergeant" accent={accent} text={reaction ?? greeting ?? '¡A cumplir, recluta!'} />
+              <ComicBubble from="sergeant" accent={accent} text={reaction ?? greeting ?? t('home.defaultGreeting')} />
             )}
           </View>
         </View>
@@ -320,10 +320,10 @@ export default function HomeScreen() {
           }}
         >
           <Text style={{ fontFamily: FONTS.display, fontSize: 26, color: DARK.text, letterSpacing: 1 }}>
-            METAS DE HOY
+            {t('home.goalsToday')}
           </Text>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, textTransform: 'capitalize' }}>
-            {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' })}
+            {new Date().toLocaleDateString(appLocale() === 'en' ? 'en-US' : 'es-MX', { weekday: 'long', day: 'numeric', month: 'short' })}
           </Text>
         </View>
 
@@ -331,10 +331,10 @@ export default function HomeScreen() {
           {goals.length === 0 ? (
             <Card elevation={1} style={{ padding: 24, alignItems: 'center' }}>
               <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.textDim, letterSpacing: 1, textAlign: 'center' }}>
-                SIN METAS ACTIVAS
+                {t('home.noGoals')}
               </Text>
               <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: DARK.textMuted, marginTop: 4 }}>
-                Ve a "Metas" para agregar.
+                {t('home.addGoalsHint')}
               </Text>
             </Card>
           ) : (
@@ -388,7 +388,7 @@ export default function HomeScreen() {
               ¡MISIÓN CUMPLIDA!
             </Text>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.text, marginTop: 4, textAlign: 'center' }}>
-              Todas las metas del día, recluta.
+              {t('home.allDone')}
             </Text>
           </Card>
         ) : null}
