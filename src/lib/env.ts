@@ -33,7 +33,14 @@ export const ENV = {
   ),
 };
 
+/**
+ * ¿Usar la Edge Function para Gemini en vez de llamar directo con la key?
+ * Actívalo en producción: EXPO_PUBLIC_GEMINI_VIA_EDGE=true (y NO incluyas
+ * EXPO_PUBLIC_GEMINI_API_KEY en el build). Ver supabase/functions/sergeant-reply.
+ */
+export const GEMINI_VIA_EDGE = process.env.EXPO_PUBLIC_GEMINI_VIA_EDGE === 'true';
+
 /** ¿Tenemos credenciales de Supabase configuradas? */
 export const HAS_SUPABASE = Boolean(ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY);
-/** ¿Tenemos API key de Gemini? */
+/** ¿Tenemos API key de Gemini en el cliente (solo dev)? */
 export const HAS_GEMINI = Boolean(ENV.GEMINI_API_KEY);

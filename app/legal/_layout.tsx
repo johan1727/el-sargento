@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { DARK } from '../../src/constants/theme';
 
-export default function OnboardingLayout() {
+export default function LegalLayout() {
   return (
     <Stack
       screenOptions={{

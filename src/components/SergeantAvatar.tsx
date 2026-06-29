@@ -2,12 +2,12 @@
  * Avatar del sargento.
  *
  * TODO(jhonatan): reemplazar estos placeholders con ilustraciones reales en
- * estilo cómic consistente. Genera los 4 con un generador de imágenes IA
- * (mismo artista/estilo/fondo) y colócalos en assets/sargentos/<id>.png; luego
+ * estilo consistente. Genera los 4 con un generador de imágenes IA (mismo
+ * artista/estilo/fondo) y colócalos en assets/sargentos/<id>.png; luego
  * descomenta la rama <Image> de abajo.
  */
-import { Image, Text, View } from 'react-native';
-import { comicBorder, comicShadow } from '../constants/theme';
+import { Image, Text, View, type ImageStyle } from 'react-native';
+import { DARK, softShadow } from '../constants/theme';
 import { getCharacter, type SergeantId } from '../constants/characters';
 
 // Cuando existan los PNG, mapéalos aquí:
@@ -25,29 +25,27 @@ interface Props {
   shadow?: number;
 }
 
-export function SergeantAvatar({ sergeantId, size = 72, shadow = 4 }: Props) {
+export function SergeantAvatar({ sergeantId, size = 72, shadow = 2 }: Props) {
   const character = getCharacter(sergeantId);
   const realAvatar = AVATARS[sergeantId];
+  const shadowStyle = shadow > 0 ? softShadow(1) : null;
 
   if (realAvatar) {
     return (
       <Image
         source={realAvatar}
         style={[
-          comicBorder,
-          comicShadow(shadow),
           { width: size, height: size, borderRadius: size / 2, backgroundColor: character.theme.primary },
+          shadowStyle as ImageStyle,
         ]}
       />
     );
   }
 
-  // Placeholder: círculo con color del sargento + emoji + inicial.
+  // Placeholder: círculo con color del sargento + emoji + banderita.
   return (
     <View
       style={[
-        comicBorder,
-        comicShadow(shadow),
         {
           width: size,
           height: size,
@@ -56,6 +54,7 @@ export function SergeantAvatar({ sergeantId, size = 72, shadow = 4 }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
         },
+        shadowStyle,
       ]}
     >
       <Text style={{ fontSize: size * 0.42 }}>{character.emoji}</Text>
@@ -64,12 +63,12 @@ export function SergeantAvatar({ sergeantId, size = 72, shadow = 4 }: Props) {
           position: 'absolute',
           bottom: -2,
           right: -2,
-          width: size * 0.34,
-          height: size * 0.34,
-          borderRadius: size * 0.17,
+          width: size * 0.36,
+          height: size * 0.36,
+          borderRadius: size * 0.18,
           backgroundColor: character.theme.accent,
           borderWidth: 2,
-          borderColor: '#0A0A0A',
+          borderColor: DARK.bg,
           alignItems: 'center',
           justifyContent: 'center',
         }}

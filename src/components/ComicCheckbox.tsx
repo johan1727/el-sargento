@@ -1,12 +1,12 @@
 /**
- * Checkbox grande estilo cómic que "explota" al marcarse (pop + estrella).
- * Pensado para la lista de metas del Home.
+ * Checkbox redondeado moderno. Vacío: superficie + hairline. Marcado: relleno
+ * de acento con check que hace "pop". Haptic de éxito al marcar.
  */
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Platform } from 'react-native';
+import { Animated, Platform, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { comicBorder, comicShadow, COMIC } from '../constants/theme';
+import { DARK, RADIUS, accentGlow } from '../constants/theme';
 
 interface Props {
   checked: boolean;
@@ -15,85 +15,53 @@ interface Props {
   size?: number;
 }
 
-export function ComicCheckbox({
-  checked,
-  onToggle,
-  accent = '#2E5E3A',
-  size = 44,
-}: Props) {
+export function ComicCheckbox({ checked, onToggle, accent = '#3DDC97', size = 30 }: Props) {
   const pop = useRef(new Animated.Value(checked ? 1 : 0)).current;
-  const burst = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(pop, {
       toValue: checked ? 1 : 0,
       useNativeDriver: true,
-      friction: 4,
-      tension: 140,
+      friction: 5,
+      tension: 160,
     }).start();
   }, [checked, pop]);
 
   const handle = () => {
-    if (!checked) {
-      // "explosión" cómic al marcar
-      burst.setValue(0);
-      Animated.timing(burst, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-          () => {},
-        );
-      }
+    if (!checked && Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
     onToggle();
   };
 
   return (
-    <Pressable onPress={handle} hitSlop={8}>
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        {/* estrella de explosión */}
+    <Pressable onPress={handle} hitSlop={10}>
+      <View
+        style={[
+          {
+            width: size,
+            height: size,
+            borderRadius: RADIUS.sm,
+            backgroundColor: checked ? accent : DARK.surfaceAlt,
+            borderWidth: checked ? 0 : 1.5,
+            borderColor: DARK.hairlineStrong,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          checked ? accentGlow(accent, 1) : null,
+        ]}
+      >
         <Animated.Text
           style={{
-            position: 'absolute',
-            fontSize: size * 0.9,
-            opacity: burst.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0] }),
-            transform: [
-              { scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1.8] }) },
-              { rotate: burst.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '40deg'] }) },
-            ],
+            fontSize: size * 0.6,
+            lineHeight: size * 0.72,
+            color: '#0B0E13',
+            fontWeight: '900',
+            transform: [{ scale: pop }],
           }}
         >
-          💥
+          ✓
         </Animated.Text>
-
-        <View
-          style={[
-            comicBorder,
-            comicShadow(3),
-            {
-              width: size,
-              height: size,
-              borderRadius: 12,
-              backgroundColor: checked ? accent : '#FFFFFF',
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-          ]}
-        >
-          <Animated.Text
-            style={{
-              fontSize: size * 0.55,
-              color: '#FFFFFF',
-              transform: [{ scale: pop }],
-            }}
-          >
-            ✓
-          </Animated.Text>
-        </View>
       </View>
     </Pressable>
   );

@@ -15,6 +15,9 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 import { supabase } from '../lib/supabase';
 import { HAS_SUPABASE } from '../lib/env';
@@ -30,10 +33,16 @@ interface SessionState {
   refreshProfile: () => Promise<Profile | null>;
   /** Actualiza el profile en memoria sin ir a la red (optimista). */
   patchProfile: (patch: Partial<Profile>) => void;
-  signUp: (email: string, password: string) => Promise<{ error?: string }>;
+  /** needsConfirmation = cuenta creada pero requiere confirmar email antes de entrar */
+  signUp: (email: string, password: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signInWithGoogle: () => Promise<{ error?: string; cancelled?: boolean }>;
+  resetPassword: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
+
+// Necesario para cerrar el popup de OAuth en web.
+WebBrowser.maybeCompleteAuthSession();
 
 const SessionContext = createContext<SessionState | undefined>(undefined);
 
@@ -96,13 +105,56 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [loadProfile]);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error: error.message };
-    return {};
+    // Si email-confirmation está ON, no hay sesión hasta confirmar el correo.
+    return { needsConfirmation: !data.session };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return {};
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const redirectTo = Linking.createURL('/');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: Platform.OS !== 'web' },
+      });
+      if (error) return { error: error.message };
+      if (Platform.OS === 'web') return {}; // redirección de página completa
+
+      if (!data?.url) return { error: 'No se pudo iniciar la sesión con Google.' };
+      const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (res.type !== 'success') return { cancelled: true };
+
+      const parsed = Linking.parse(res.url);
+      const params = (parsed.queryParams ?? {}) as Record<string, string>;
+      if (params.error) return { error: params.error_description ?? params.error };
+
+      if (params.code) {
+        const { error: exErr } = await supabase.auth.exchangeCodeForSession(params.code);
+        if (exErr) return { error: exErr.message };
+      } else if (params.access_token) {
+        const { error: sErr } = await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+        if (sErr) return { error: sErr.message };
+      } else {
+        return { error: 'No se recibió token de Google.' };
+      }
+      return {};
+    } catch (err: any) {
+      return { error: err?.message ?? 'Error con Google' };
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) return { error: error.message };
     return {};
   }, []);
@@ -123,9 +175,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       patchProfile,
       signUp,
       signIn,
+      signInWithGoogle,
+      resetPassword,
       signOut,
     }),
-    [loading, session, profile, refreshProfile, patchProfile, signUp, signIn, signOut],
+    [loading, session, profile, refreshProfile, patchProfile, signUp, signIn, signInWithGoogle, resetPassword, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

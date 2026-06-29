@@ -11,8 +11,10 @@
  * Si no hay API key (o falla la red), caemos a una respuesta canned EN PERSONAJE
  * para que la app siga siendo usable.
  */
-import { BASE_RULES, getCharacter, type SergeantId } from '../constants/characters';
-import { ENV, HAS_GEMINI } from './env';
+import * as FileSystem from 'expo-file-system';
+import { BASE_RULES, getCharacter, type SergeantId, type Character } from '../constants/characters';
+import { ENV, HAS_GEMINI, HAS_SUPABASE, GEMINI_VIA_EDGE } from './env';
+import { supabase } from './supabase';
 
 // gemini-1.5-flash según el spec. Swappable a gemini-2.0-flash / 2.5-flash.
 const GEMINI_MODEL = 'gemini-2.0-flash';
@@ -84,6 +86,57 @@ export interface ReplyResult {
  * @param userMessage mensaje nuevo del usuario
  * @param ctx contexto del recluta (metas, racha, rango)
  */
+/** Arma el cuerpo de generateContent de Gemini (sin la API key). */
+function buildPayload(character: Character, history: ChatTurn[], userMessage: string, ctx: SergeantContext) {
+  return {
+    systemInstruction: {
+      parts: [{ text: `${character.systemPrompt}\n\n${BASE_RULES}\n\n${buildContextBlock(ctx)}` }],
+    },
+    contents: toGeminiContents(history.slice(-10), userMessage),
+    generationConfig: { temperature: 1.0, topP: 0.95, maxOutputTokens: 200 },
+    safetySettings: SAFETY_SETTINGS,
+  };
+}
+
+function extractText(json: any): string {
+  return (
+    json?.candidates?.[0]?.content?.parts
+      ?.map((p: { text?: string }) => p.text ?? '')
+      .join('')
+      .trim() ?? ''
+  );
+}
+
+/** ¿Hay alguna ruta para llamar a Gemini (Edge Function o key directa)? */
+export function geminiAvailable(): boolean {
+  return (GEMINI_VIA_EDGE && HAS_SUPABASE) || HAS_GEMINI;
+}
+
+/**
+ * Llama a Gemini con un payload arbitrario de generateContent.
+ * Prefiere la Edge Function (key en el servidor); si no, usa la key directa (dev).
+ * Lanza en caso de error de red/HTTP.
+ */
+async function callGemini(payload: object): Promise<string> {
+  if (GEMINI_VIA_EDGE && HAS_SUPABASE) {
+    const { data, error } = await supabase.functions.invoke('sergeant-reply', {
+      body: { model: GEMINI_MODEL, payload },
+    });
+    if (error) throw error;
+    return (data as { text?: string })?.text ?? '';
+  }
+  const res = await fetch(GEMINI_URL(GEMINI_MODEL, ENV.GEMINI_API_KEY), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`gemini ${res.status} ${detail}`);
+  }
+  return extractText(await res.json());
+}
+
 export async function generateSergeantReply(
   sergeantId: SergeantId,
   history: ChatTurn[],
@@ -91,56 +144,54 @@ export async function generateSergeantReply(
   ctx: SergeantContext,
 ): Promise<ReplyResult> {
   const character = getCharacter(sergeantId);
+  const canned = (): ReplyResult => ({ text: fallbackReply(sergeantId, userMessage, ctx), fromAI: false });
 
-  if (!HAS_GEMINI) {
-    return { text: fallbackReply(sergeantId, userMessage, ctx), fromAI: false };
-  }
+  if (!geminiAvailable()) return canned();
 
-  const systemInstruction = {
-    parts: [
-      {
-        text: `${character.systemPrompt}\n\n${BASE_RULES}\n\n${buildContextBlock(ctx)}`,
-      },
-    ],
-  };
-
-  const body = {
-    systemInstruction,
-    contents: toGeminiContents(history.slice(-10), userMessage),
-    generationConfig: {
-      temperature: 1.0,
-      topP: 0.95,
-      maxOutputTokens: 200,
-    },
-    safetySettings: SAFETY_SETTINGS,
-  };
+  const payload = buildPayload(character, history, userMessage, ctx);
 
   try {
-    const res = await fetch(GEMINI_URL(GEMINI_MODEL, ENV.GEMINI_API_KEY), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      if (__DEV__) console.warn('[gemini] HTTP', res.status, await res.text());
-      return { text: fallbackReply(sergeantId, userMessage, ctx), fromAI: false };
-    }
-
-    const json = await res.json();
-    const text: string | undefined =
-      json?.candidates?.[0]?.content?.parts
-        ?.map((p: { text?: string }) => p.text ?? '')
-        .join('')
-        .trim();
-
-    if (!text) {
-      return { text: fallbackReply(sergeantId, userMessage, ctx), fromAI: false };
-    }
+    const text = await callGemini(payload);
+    if (!text) return canned();
     return { text, fromAI: true };
   } catch (err) {
     if (__DEV__) console.warn('[gemini] error', err);
-    return { text: fallbackReply(sergeantId, userMessage, ctx), fromAI: false };
+    return canned();
+  }
+}
+
+/**
+ * Transcribe un archivo de audio a texto usando Gemini multimodal.
+ * Devuelve null si no hay ruta a Gemini o si falla (el caller decide el fallback).
+ *
+ * NOTA: el preset HIGH_QUALITY de expo-av produce m4a/aac. Si Gemini rechaza el
+ * mimeType, ajusta a 'audio/aac' o cambia el formato de grabación.
+ */
+export async function transcribeAudio(uri: string): Promise<string | null> {
+  if (!geminiAvailable()) return null;
+  try {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const payload = {
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: 'Transcribe este audio a texto en español de México. Devuelve SOLO la transcripción, sin comillas ni explicaciones.',
+            },
+            { inlineData: { mimeType: 'audio/mp4', data: base64 } },
+          ],
+        },
+      ],
+      generationConfig: { temperature: 0, maxOutputTokens: 256 },
+    };
+    const text = await callGemini(payload);
+    return text || null;
+  } catch (err) {
+    if (__DEV__) console.warn('[gemini] transcribeAudio', err);
+    return null;
   }
 }
 

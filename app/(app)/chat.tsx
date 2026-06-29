@@ -1,17 +1,16 @@
 /**
- * Pantalla de chat — conversación con el sargento.
+ * Pantalla de chat — conversación con el sargento (rediseño dark).
  *
  * Funciones:
  * - Historial de mensajes desde Supabase.
  * - Input de texto + envío.
- * - Botón de micrófono: graba → transcribe (expo-speech STT / Gemini) → responde.
+ * - Botón de micrófono: graba → (futuro) transcribe → responde.
  * - Cada burbuja del sargento tiene botón 🔊 para escuchar (Gemini TTS).
  * - Gate premium: sin acceso pleno → máx 3 mensajes/día.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -31,23 +30,32 @@ import {
   countUserMessagesToday,
   getGoalsWithToday,
 } from '../../src/lib/db';
-import { generateSergeantReply, type ChatTurn } from '../../src/lib/gemini';
+import { generateSergeantReply, transcribeAudio, type ChatTurn } from '../../src/lib/gemini';
 import { speak, stopSpeech } from '../../src/lib/tts';
 import { hasFullAccess, FREE_DAILY_MESSAGE_LIMIT } from '../../src/lib/streak';
 import type { Message } from '../../src/types/database';
 import { ComicBubble } from '../../src/components/ComicBubble';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
-import { COMIC, comicBorder, comicShadow } from '../../src/constants/theme';
+import { Card } from '../../src/components/Card';
+import { useDialog } from '../../src/components/Dialog';
+import { DARK, FONTS, RADIUS, accentGlow } from '../../src/constants/theme';
+
+/** Tope de longitud del mensaje del usuario (evita payloads enormes). */
+const MAX_MESSAGE_LEN = 1000;
 
 export default function ChatScreen() {
   const { user, profile } = useSession();
+  const { show } = useDialog();
   const character = getCharacter(profile?.chosen_sergeant);
+  const accent = character.theme.accent;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [aiOffline, setAiOffline] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [msgCount, setMsgCount] = useState(0);
   const listRef = useRef<FlatList>(null);
@@ -56,7 +64,6 @@ export default function ChatScreen() {
   const isPremium = profile ? hasFullAccess(profile) : false;
   const limitReached = !isPremium && msgCount >= FREE_DAILY_MESSAGE_LIMIT;
 
-  // Carga inicial.
   useEffect(() => {
     if (!user || !profile) return;
     (async () => {
@@ -90,19 +97,20 @@ export default function ChatScreen() {
   const sendMessage = useCallback(async (text: string) => {
     if (!user || !profile || !text.trim() || sending) return;
     if (limitReached) {
-      Alert.alert(
-        '🔒 Límite del día',
-        `Sin Premium, tienes ${FREE_DAILY_MESSAGE_LIMIT} mensajes por día. ¡Activa tu suscripción para hablar sin límites!`,
-        [{ text: 'Cerrar' }],
-      );
+      show({
+        icon: '🔒',
+        title: 'Límite del día',
+        message: `Sin Premium, tienes ${FREE_DAILY_MESSAGE_LIMIT} mensajes por día. ¡Activa tu suscripción para hablar sin límites!`,
+        accent,
+        buttons: [{ text: 'Cerrar', style: 'cancel' }],
+      });
       return;
     }
 
     setSending(true);
-    const userText = text.trim();
+    const userText = text.trim().slice(0, MAX_MESSAGE_LEN);
     setInput('');
 
-    // Guardar mensaje del usuario.
     const userMsg = await addMessage(user.id, {
       role: 'user',
       content: userText,
@@ -112,7 +120,6 @@ export default function ChatScreen() {
     setMsgCount((c) => c + 1);
     scrollToBottom();
 
-    // Construir historial para Gemini (últimos 10 turnos).
     const history: ChatTurn[] = messages.slice(-10).map((m) => ({
       role: m.role === 'user' ? 'user' : 'sergeant',
       content: m.content,
@@ -120,8 +127,8 @@ export default function ChatScreen() {
 
     const ctx = await getContext();
     const reply = await generateSergeantReply(profile.chosen_sergeant, history, userText, ctx);
+    setAiOffline(!reply.fromAI);
 
-    // Guardar respuesta del sargento.
     const sergMsg = await addMessage(user.id, {
       role: 'sergeant',
       content: reply.text,
@@ -136,19 +143,17 @@ export default function ChatScreen() {
   // ── Voz: grabar ───────────────────────────────────────────────
   const startRecording = async () => {
     if (!isPremium) {
-      Alert.alert('🔒 Solo Premium', 'La conversación por voz está disponible con suscripción activa.');
+      show({ icon: '🔒', title: 'Solo Premium', message: 'La conversación por voz está disponible con suscripción activa.', accent });
       return;
     }
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
-        Alert.alert('Permiso necesario', 'Necesitamos acceso al micrófono para escucharte.');
+        show({ icon: '🎤', title: 'Permiso necesario', message: 'Necesitamos acceso al micrófono para escucharte.', accent });
         return;
       }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       recorderRef.current = recording;
       setRecording(true);
     } catch (err) {
@@ -165,17 +170,23 @@ export default function ChatScreen() {
       recorderRef.current = null;
       if (!uri) return;
 
-      // TODO: Gemini puede recibir audio directamente (multimodal).
-      // Por ahora usamos expo-speech on-device STT si está disponible.
-      // Fallback: mostrar input de texto con aviso.
-      // Para una implementación completa, enviar el audio a Gemini como
-      // inlineData base64 con mimeType 'audio/m4a' en el mensaje del usuario.
-      Alert.alert(
-        'Voz grabada',
-        'Por ahora escribe tu mensaje. En producción aquí va la transcripción automática.',
-        [{ text: 'OK' }],
-      );
+      // Transcribe el audio con Gemini multimodal y manda el texto como mensaje.
+      setTranscribing(true);
+      const text = await transcribeAudio(uri);
+      setTranscribing(false);
+
+      if (text) {
+        await sendMessage(text);
+      } else {
+        show({
+          icon: '🎤',
+          title: 'No te entendí',
+          message: 'No pude transcribir el audio. Intenta de nuevo o escribe tu mensaje.',
+          accent,
+        });
+      }
     } catch (err) {
+      setTranscribing(false);
       if (__DEV__) console.warn('[chat] stopRecording', err);
     }
   };
@@ -195,11 +206,11 @@ export default function ChatScreen() {
     if (item.role === 'sergeant') {
       return (
         <View style={{ flexDirection: 'row', gap: 8, paddingLeft: 4, paddingRight: 16 }}>
-          <SergeantAvatar sergeantId={character.id} size={36} shadow={2} />
+          <SergeantAvatar sergeantId={character.id} size={34} shadow={1} />
           <ComicBubble
             from="sergeant"
+            accent={accent}
             text={item.content}
-            color="#FFFFFF"
             onSpeak={() => handleSpeak(item)}
             speaking={speakingId === item.id}
           />
@@ -208,21 +219,16 @@ export default function ChatScreen() {
     }
     return (
       <View style={{ paddingLeft: 16, paddingRight: 4 }}>
-        <ComicBubble
-          from="user"
-          text={item.content}
-          color="#FFE9A8"
-        />
+        <ComicBubble from="user" accent={accent} text={item.content} />
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COMIC.paper }}>
-      {/* Header full-bleed */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
       <SergeantHeader
         character={character}
-        subtitle={!isPremium ? `${Math.max(0, FREE_DAILY_MESSAGE_LIMIT - msgCount)} mensajes hoy · Activa Premium` : undefined}
+        subtitle={!isPremium ? `${Math.max(0, FREE_DAILY_MESSAGE_LIMIT - msgCount)} mensajes hoy` : undefined}
       />
 
       <KeyboardAvoidingView
@@ -230,95 +236,104 @@ export default function ChatScreen() {
         style={{ flex: 1 }}
         keyboardVerticalOffset={90}
       >
-        {/* Lista de mensajes */}
         <FlatList
           ref={listRef}
           data={messages}
           keyExtractor={(m) => m.id}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 12, gap: 8, paddingBottom: 20 }}
+          contentContainerStyle={{ padding: 12, gap: 12, paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
           ListEmptyComponent={
-            <View style={{ alignItems: 'center', marginTop: 40 }}>
-              <Text style={{ fontFamily: 'Bangers', fontSize: 28, color: COMIC.ink, letterSpacing: 1, textAlign: 'center' }}>
-                {character.emoji}
-              </Text>
-              <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 16, color: '#888', marginTop: 10, textAlign: 'center' }}>
+            <View style={{ alignItems: 'center', marginTop: 48 }}>
+              <Text style={{ fontSize: 40 }}>{character.emoji}</Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 16, color: DARK.textDim, marginTop: 12, textAlign: 'center' }}>
                 ¿Qué le dices a {character.name}?
               </Text>
             </View>
           }
           ListFooterComponent={
             sending ? (
-              <View style={{ flexDirection: 'row', gap: 8, paddingLeft: 4, marginTop: 8 }}>
-                <SergeantAvatar sergeantId={character.id} size={36} shadow={2} />
-                <View style={[comicBorder, comicShadow(3), { backgroundColor: '#FFF', borderRadius: 14, padding: 14 }]}>
-                  <ActivityIndicator color={character.theme.primary} />
-                </View>
+              <View style={{ flexDirection: 'row', gap: 8, paddingLeft: 4, marginTop: 4 }}>
+                <SergeantAvatar sergeantId={character.id} size={34} shadow={1} />
+                <Card alt elevation={0} style={{ padding: 14, alignSelf: 'flex-start' }}>
+                  <ActivityIndicator color={accent} />
+                </Card>
               </View>
             ) : null
           }
         />
 
+        {/* Banner: respuesta offline (sin conexión a la IA) */}
+        {aiOffline ? (
+          <View style={{ backgroundColor: 'rgba(245,184,67,0.14)', borderTopWidth: 1, borderTopColor: 'rgba(245,184,67,0.4)', paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ fontSize: 13 }}>⚠️</Text>
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: '#F5B843', flex: 1 }}>
+              Sin conexión con la IA — respuesta offline del sargento.
+            </Text>
+          </View>
+        ) : null}
+
         {/* Input bar */}
         <View
-          style={[
-            comicBorder,
-            {
-              flexDirection: 'row',
-              alignItems: 'flex-end',
-              gap: 8,
-              backgroundColor: '#FFFFFF',
-              padding: 10,
-              borderBottomWidth: 0,
-              borderLeftWidth: 0,
-              borderRightWidth: 0,
-            },
-          ]}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            gap: 8,
+            backgroundColor: DARK.bgElevated,
+            borderTopWidth: 1,
+            borderTopColor: DARK.hairline,
+            padding: 10,
+          }}
         >
-          {/* Botón de micrófono */}
+          {/* Micrófono */}
           <Pressable
-            onPressIn={startRecording}
+            onPressIn={() => { if (!transcribing) startRecording(); }}
             onPressOut={stopRecording}
+            disabled={transcribing}
             style={[
-              comicBorder,
-              comicShadow(3),
               {
                 width: 48,
                 height: 48,
-                borderRadius: 12,
-                backgroundColor: recording ? '#E01E37' : character.theme.primary,
+                borderRadius: RADIUS.md,
+                backgroundColor: recording ? '#E01E37' : DARK.surfaceAlt,
+                borderWidth: 1,
+                borderColor: recording ? '#E01E37' : DARK.hairline,
                 alignItems: 'center',
                 justifyContent: 'center',
               },
+              recording ? accentGlow('#E01E37', 1) : null,
             ]}
           >
-            <Text style={{ fontSize: 22 }}>{recording ? '🔴' : '🎤'}</Text>
+            {transcribing ? (
+              <ActivityIndicator size="small" color={accent} />
+            ) : (
+              <Text style={{ fontSize: 20 }}>{recording ? '🔴' : '🎤'}</Text>
+            )}
           </Pressable>
 
-          {/* Input de texto */}
+          {/* Texto */}
           <TextInput
             value={input}
             onChangeText={setInput}
             placeholder={limitReached ? 'Límite diario alcanzado' : 'Escríbele al sargento...'}
-            placeholderTextColor="#AAA"
+            placeholderTextColor={DARK.textMuted}
             multiline
+            maxLength={MAX_MESSAGE_LEN}
             editable={!limitReached}
-            style={[
-              comicBorder,
-              {
-                flex: 1,
-                backgroundColor: limitReached ? '#F5F5F5' : '#FFFFFF',
-                borderRadius: 12,
-                paddingVertical: 12,
-                paddingHorizontal: 14,
-                fontFamily: 'Nunito_700Bold',
-                fontSize: 15,
-                color: COMIC.ink,
-                maxHeight: 100,
-              },
-            ]}
+            style={{
+              flex: 1,
+              backgroundColor: DARK.surfaceAlt,
+              borderWidth: 1,
+              borderColor: DARK.hairline,
+              borderRadius: RADIUS.md,
+              paddingVertical: 12,
+              paddingHorizontal: 14,
+              fontFamily: FONTS.bodyBold,
+              fontSize: 15,
+              color: DARK.text,
+              maxHeight: 100,
+            }}
             onSubmitEditing={() => sendMessage(input)}
           />
 
@@ -327,19 +342,18 @@ export default function ChatScreen() {
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || sending || limitReached}
             style={[
-              comicBorder,
-              comicShadow(3),
               {
                 width: 48,
                 height: 48,
-                borderRadius: 12,
-                backgroundColor: input.trim() && !limitReached ? character.theme.accent : '#DDD',
+                borderRadius: RADIUS.md,
+                backgroundColor: input.trim() && !limitReached ? accent : DARK.surfaceHigh,
                 alignItems: 'center',
                 justifyContent: 'center',
               },
+              input.trim() && !limitReached ? accentGlow(accent, 1) : null,
             ]}
           >
-            <Text style={{ fontSize: 22 }}>▶</Text>
+            <Text style={{ fontSize: 20, color: input.trim() && !limitReached ? '#0B0E13' : DARK.textMuted }}>▶</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

@@ -1,11 +1,10 @@
 /**
- * Gestión de metas — Brutalist.
- * Cards con franja izquierda en color del sargento + porcentaje en Bangers grande.
+ * Gestión de metas — rediseño dark.
+ * Tarjetas oscuras con porcentaje de 7 días en Bangers + barra de progreso de acento.
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -22,15 +21,20 @@ import { getActiveGoals, addGoal, deactivateGoal, getCompletionRate } from '../.
 import type { Goal } from '../../src/types/database';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
 import { ComicButton } from '../../src/components/ComicButton';
-import { ActionBurst } from '../../src/components/ActionBurst';
-import { COMIC, comicBorder, comicShadow, comicWash } from '../../src/constants/theme';
+import { Card } from '../../src/components/Card';
+import { ProgressBar } from '../../src/components/ProgressBar';
+import { useDialog } from '../../src/components/Dialog';
+import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
 interface GoalWithRate extends Goal { rate7: number }
 
+/** Tope de longitud del título de meta. */
+const MAX_GOAL_LEN = 80;
+
 function rateColor(rate: number) {
-  if (rate >= 70) return '#2E5E3A';
-  if (rate >= 40) return '#E3B23C';
-  return '#E01E37';
+  if (rate >= 70) return '#3DDC97';
+  if (rate >= 40) return '#F5B843';
+  return '#FF5A65';
 }
 
 function sergeantComment(rate: number, title: string) {
@@ -42,7 +46,9 @@ function sergeantComment(rate: number, title: string) {
 
 export default function GoalsScreen() {
   const { user, profile } = useSession();
+  const { show } = useDialog();
   const character = getCharacter(profile?.chosen_sergeant);
+  const accent = character.theme.accent;
   const [goals, setGoals] = useState<GoalWithRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
@@ -52,7 +58,7 @@ export default function GoalsScreen() {
     if (!user) return;
     const raw = await getActiveGoals(user.id);
     const withRates = await Promise.all(
-      raw.map(async (g) => ({ ...g, rate7: await getCompletionRate(user.id, g.id, 7) })),
+      raw.map(async (g) => ({ ...g, rate7: await getCompletionRate(user.id, g.id, 7, g.created_at) })),
     );
     setGoals(withRates);
     setLoading(false);
@@ -63,21 +69,21 @@ export default function GoalsScreen() {
   const handleAdd = async () => {
     if (!user || !newTitle.trim()) return;
     if (goals.length >= 5) {
-      Alert.alert('Límite', `${character.name} dice: 5 metas máximo. Enfócate.`);
+      show({ icon: character.emoji, title: 'Límite', message: `${character.name} dice: 5 metas máximo. Enfócate.`, accent });
       return;
     }
     setAdding(true);
-    const g = await addGoal(user.id, newTitle.trim(), 'habit');
+    const g = await addGoal(user.id, newTitle.trim().slice(0, MAX_GOAL_LEN), 'habit');
     setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
     setNewTitle('');
     setAdding(false);
   };
 
   const handleRemove = (goal: GoalWithRate) => {
-    Alert.alert(
-      '¿Desactivar meta?',
-      `"${goal.title}" dejará de aparecer en tu check-in.`,
-      [
+    show({
+      title: '¿Desactivar meta?',
+      message: `"${goal.title}" dejará de aparecer en tu check-in.`,
+      buttons: [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Desactivar',
@@ -88,19 +94,19 @@ export default function GoalsScreen() {
           },
         },
       ],
-    );
+    });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: character.theme.dark, alignItems: 'center', justifyContent: 'center' }} edges={['top']}>
-        <ActivityIndicator size="large" color={character.theme.accent} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg, alignItems: 'center', justifyContent: 'center' }} edges={['top']}>
+        <ActivityIndicator size="large" color={accent} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COMIC.paperWarm }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
       <SergeantHeader character={character} subtitle="Seguimiento 7 días" />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -110,115 +116,105 @@ export default function GoalsScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 12 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <Text style={{ fontFamily: 'Bangers', fontSize: 32, color: COMIC.ink, letterSpacing: 2, marginBottom: 4 }}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 30, color: DARK.text, letterSpacing: 1, marginBottom: 4 }}>
               TUS METAS 🎯
             </Text>
           }
-          renderItem={({ item }) => (
-            <View
-              style={[
-                comicBorder,
-                comicShadow(5),
-                {
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  flexDirection: 'row',
-                },
-              ]}
-            >
-              {/* Franja izquierda */}
-              <View style={{ width: 8, backgroundColor: rateColor(item.rate7) }} />
-
-              <View style={{ flex: 1, padding: 14 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
+          renderItem={({ item }) => {
+            const rc = rateColor(item.rate7);
+            return (
+              <Card elevation={1} style={{ padding: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 17, color: COMIC.ink }}>{item.title}</Text>
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: '#888', marginTop: 2 }}>
-                      {item.type === 'habit' ? 'Hábito' : 'Proyecto'} · 7 días
+                    <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 17, color: DARK.text }}>{item.title}</Text>
+                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted, marginTop: 2 }}>
+                      {item.type === 'habit' ? 'Hábito' : 'Proyecto'} · últimos 7 días
                     </Text>
                   </View>
 
-                  {/* Porcentaje en Bangers dominante */}
+                  {/* Porcentaje en Bangers */}
                   <View
-                    style={[
-                      comicBorder,
-                      comicShadow(3),
-                      {
-                        width: 64,
-                        height: 64,
-                        borderRadius: 12,
-                        backgroundColor: rateColor(item.rate7),
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      },
-                    ]}
+                    style={{
+                      minWidth: 64,
+                      height: 64,
+                      paddingHorizontal: 8,
+                      borderRadius: RADIUS.md,
+                      backgroundColor: DARK.surfaceAlt,
+                      borderWidth: 1.5,
+                      borderColor: rc,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
-                    <Text style={{ fontFamily: 'Bangers', fontSize: 26, color: '#FFF', lineHeight: 28 }}>{item.rate7}</Text>
-                    <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#EEE' }}>%</Text>
+                    <Text style={{ fontFamily: FONTS.display, fontSize: 26, color: rc, lineHeight: 28 }}>{item.rate7}</Text>
+                    <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 10, color: DARK.textDim }}>%</Text>
                   </View>
                 </View>
 
-                {/* Barra de progreso */}
-                <View style={{ height: 10, backgroundColor: '#EEE', borderRadius: 5, overflow: 'hidden', borderWidth: 1.5, borderColor: COMIC.ink, marginBottom: 10 }}>
-                  <View style={{ height: '100%', width: `${item.rate7}%`, backgroundColor: rateColor(item.rate7) }} />
-                </View>
+                <ProgressBar value={item.rate7} color={rc} height={8} style={{ marginBottom: 12 }} />
 
-                {/* Comentario del sargento */}
-                <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 13, color: '#666', fontStyle: 'italic', marginBottom: 10 }}>
+                <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, fontStyle: 'italic', marginBottom: 12 }}>
                   {character.emoji} {sergeantComment(item.rate7, item.title)}
                 </Text>
 
                 <Pressable
                   onPress={() => handleRemove(item)}
-                  style={{ alignSelf: 'flex-end', paddingVertical: 5, paddingHorizontal: 14, borderRadius: 8, borderWidth: 2, borderColor: '#E01E37' }}
+                  style={{
+                    alignSelf: 'flex-end',
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    borderRadius: RADIUS.sm,
+                    borderWidth: 1,
+                    borderColor: '#FF5A65',
+                  }}
                 >
-                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#E01E37' }}>Desactivar</Text>
+                  <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: '#FF5A65' }}>Desactivar</Text>
                 </Pressable>
-              </View>
-            </View>
-          )}
+              </Card>
+            );
+          }}
           ListFooterComponent={
             goals.length < 5 ? (
-              <View style={[comicBorder, comicShadow(5), { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 4 }]}>
-                <Text style={{ fontFamily: 'Bangers', fontSize: 22, color: COMIC.ink, letterSpacing: 1, marginBottom: 12 }}>
+              <Card elevation={1} style={{ padding: 16, marginTop: 4 }}>
+                <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 1, marginBottom: 12 }}>
                   + AGREGAR META
                 </Text>
                 <TextInput
                   value={newTitle}
                   onChangeText={setNewTitle}
                   placeholder="ej. Leer 20 páginas"
-                  placeholderTextColor="#BBB"
+                  placeholderTextColor={DARK.textMuted}
                   returnKeyType="done"
+                  maxLength={MAX_GOAL_LEN}
                   onSubmitEditing={handleAdd}
-                  style={[
-                    comicBorder,
-                    {
-                      backgroundColor: '#FAFAFA',
-                      borderRadius: 12,
-                      paddingVertical: 13,
-                      paddingHorizontal: 14,
-                      fontFamily: 'Nunito_700Bold',
-                      fontSize: 15,
-                      color: COMIC.ink,
-                      marginBottom: 12,
-                    },
-                  ]}
+                  style={{
+                    backgroundColor: DARK.surfaceAlt,
+                    borderWidth: 1,
+                    borderColor: DARK.hairline,
+                    borderRadius: RADIUS.md,
+                    paddingVertical: 13,
+                    paddingHorizontal: 14,
+                    fontFamily: FONTS.bodyBold,
+                    fontSize: 15,
+                    color: DARK.text,
+                    marginBottom: 12,
+                  }}
                 />
                 <ComicButton
                   label={adding ? 'AGREGANDO...' : 'AGREGAR META'}
-                  color={character.theme.primary}
+                  color={accent}
+                  textColor="#0B0E13"
                   fullWidth
                   disabled={!newTitle.trim() || adding}
                   onPress={handleAdd}
                 />
-              </View>
+              </Card>
             ) : (
-              <View style={[comicBorder, { backgroundColor: '#FFE9A8', borderRadius: 12, padding: 14, marginTop: 8 }]}>
-                <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 14, color: COMIC.ink, textAlign: 'center' }}>
+              <Card alt elevation={0} style={{ padding: 14, marginTop: 8 }}>
+                <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textDim, textAlign: 'center' }}>
                   5 metas al máximo. Desactiva una para agregar.
                 </Text>
-              </View>
+              </Card>
             )
           }
         />

@@ -1,12 +1,12 @@
 /**
- * Header full-bleed del sargento — ocupa todo el ancho, color oscuro del personaje.
- * El color del sargento domina visualmente la parte superior de cada pantalla.
- * Brutalist: sin gradientes, color plano puro, sombra dura en el borde inferior.
+ * Header del sargento — superficie oscura elevada, limpia y moderna.
+ * El acento del personaje aparece en el aro del avatar y en la línea inferior.
+ * Conserva el nombre en Bangers (alma militar) sobre estructura tipo app fitness.
  */
-import { Text, View, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, type ViewStyle } from 'react-native';
 import { SergeantAvatar } from './SergeantAvatar';
 import { RankBadge } from './RankBadge';
-import { COMIC } from '../constants/theme';
+import { DARK, FONTS, RADIUS, accentGlow, tint } from '../constants/theme';
 import type { Character } from '../constants/characters';
 import type { RankId } from '../constants/ranks';
 
@@ -15,107 +15,96 @@ interface Props {
   rank?: RankId;
   streak?: number;
   subtitle?: string;
+  /** si se pasa, muestra un engranaje a la derecha que abre Ajustes */
+  onPressSettings?: () => void;
   style?: ViewStyle;
 }
 
-export function SergeantHeader({ character, rank, streak, subtitle, style }: Props) {
+export function SergeantHeader({ character, rank, streak, subtitle, onPressSettings, style }: Props) {
+  const accent = character.theme.accent;
+
   return (
     <View
       style={[
         {
-          backgroundColor: character.theme.dark,
-          borderBottomWidth: 4,
-          borderBottomColor: COMIC.ink,
-          shadowColor: COMIC.ink,
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 1,
-          shadowRadius: 0,
-          elevation: 12,
+          backgroundColor: DARK.bgElevated,
+          borderBottomWidth: 1,
+          borderBottomColor: DARK.hairline,
           paddingHorizontal: 18,
-          paddingTop: 14,
-          paddingBottom: 18,
+          paddingTop: 12,
+          paddingBottom: 14,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 16,
-          overflow: 'hidden',
+          gap: 14,
         },
         style,
       ]}
     >
-      {/* Watermark: bandera/emoji del sargento en el fondo */}
-      <Text
-        style={{
-          position: 'absolute',
-          right: 54,
-          top: -10,
-          fontSize: 96,
-          opacity: 0.09,
-        }}
-        aria-hidden="true"
-      >
-        {character.flag}
-      </Text>
-
-      {/* Avatar con borde en color accent del sargento */}
-      <View style={{ borderWidth: 3, borderColor: character.theme.accent, borderRadius: 999 }}>
-        <SergeantAvatar sergeantId={character.id} size={62} shadow={0} />
+      {/* Avatar con aro de acento + glow sutil */}
+      <View style={[{ borderRadius: 999, borderWidth: 2, borderColor: accent }, accentGlow(accent, 1)]}>
+        <SergeantAvatar sergeantId={character.id} size={52} shadow={0} />
       </View>
 
       <View style={{ flex: 1 }}>
         <Text
           style={{
-            fontFamily: 'Bangers',
-            fontSize: 26,
-            color: '#FFFFFF',
-            letterSpacing: 1.5,
-            lineHeight: 28,
+            fontFamily: FONTS.display,
+            fontSize: 24,
+            color: DARK.text,
+            letterSpacing: 1.2,
+            lineHeight: 26,
           }}
           numberOfLines={1}
         >
           {character.name} {character.flag}
         </Text>
 
-        {rank && (
-          <RankBadge rank={rank} streak={streak} compact />
-        )}
-
-        {subtitle ? (
-          <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: character.theme.accent, marginTop: 2 }}>
+        {rank ? (
+          <View style={{ marginTop: 2 }}>
+            <RankBadge rank={rank} streak={streak} compact />
+          </View>
+        ) : subtitle ? (
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: accent, marginTop: 2 }}>
             {subtitle}
           </Text>
         ) : null}
       </View>
 
-      {/* Triángulo accent principal — esquina superior derecha */}
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 0,
-          height: 0,
-          borderTopWidth: 64,
-          borderLeftWidth: 64,
-          borderTopColor: character.theme.accent,
-          borderLeftColor: 'transparent',
-          opacity: 0.65,
-        }}
-      />
-      {/* Triángulo interior blanco — destaca el corner */}
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 0,
-          height: 0,
-          borderTopWidth: 26,
-          borderLeftWidth: 26,
-          borderTopColor: '#FFFFFF',
-          borderLeftColor: 'transparent',
-          opacity: 0.18,
-        }}
-      />
+      {/* Pastilla de racha (cuando hay rango visible y subtítulo) */}
+      {rank && subtitle ? (
+        <View
+          style={{
+            backgroundColor: tint(accent, 0.16),
+            borderColor: tint(accent, 0.4),
+            borderWidth: 1,
+            borderRadius: 999,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+          }}
+        >
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 11, color: accent }}>{subtitle}</Text>
+        </View>
+      ) : null}
+
+      {/* Engranaje de ajustes */}
+      {onPressSettings ? (
+        <Pressable
+          onPress={onPressSettings}
+          hitSlop={10}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: RADIUS.md,
+            backgroundColor: DARK.surfaceAlt,
+            borderWidth: 1,
+            borderColor: DARK.hairline,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 18 }}>⚙️</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

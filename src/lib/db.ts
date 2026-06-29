@@ -4,7 +4,7 @@
  * user_id explícito en inserts.
  */
 import { supabase } from './supabase';
-import { localDateString } from './streak';
+import { localDateString, daysBetween } from './streak';
 import type {
   Checkin,
   Goal,
@@ -27,18 +27,62 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return data as Profile | null;
 }
 
+/**
+ * Campos privilegiados que el cliente NUNCA debe escribir: el acceso de pago y
+ * la identidad. Solo deben cambiarlos procesos de confianza (webhook de
+ * RevenueCat con service role). Aunque la RLS actual permite ALL sobre la fila
+ * propia, aquí los filtramos como defensa en profundidad.
+ *
+ * IMPORTANTE (producción): añade además un trigger en Postgres que rechace
+ * cambios a is_premium/trial_ends_at salvo desde service_role. Ver CLAUDE.md.
+ */
+const PROTECTED_PROFILE_FIELDS: (keyof Profile)[] = [
+  'id',
+  'email',
+  'is_premium',
+  'trial_ends_at',
+  'created_at',
+];
+
 export async function updateProfile(
   userId: string,
   patch: Partial<Profile>,
 ): Promise<Profile> {
+  const safe: Partial<Profile> = { ...patch };
+  for (const f of PROTECTED_PROFILE_FIELDS) {
+    if (f in safe) {
+      if (__DEV__) console.warn(`[db] updateProfile ignoró campo protegido: ${f}`);
+      delete safe[f];
+    }
+  }
+
   const { data, error } = await supabase
     .from('sg_profiles')
-    .update(patch)
+    .update(safe)
     .eq('id', userId)
     .select()
     .single();
   if (error) throw error;
   return data as Profile;
+}
+
+/**
+ * SOLO DESARROLLO: simula la compra premium escribiendo is_premium directo.
+ * En producción esto lo hace el webhook de RevenueCat (service role) y este
+ * camino debe quedar bloqueado por el trigger de Postgres. Ver app/paywall.tsx.
+ */
+export async function devGrantPremium(userId: string): Promise<void> {
+  if (!__DEV__) {
+    if (typeof console !== 'undefined') {
+      console.warn('[db] devGrantPremium llamado fuera de dev — ignorado');
+    }
+    return;
+  }
+  const { error } = await supabase
+    .from('sg_profiles')
+    .update({ is_premium: true })
+    .eq('id', userId);
+  if (error) throw error;
 }
 
 // ── Goals ──────────────────────────────────────────────────────
@@ -128,11 +172,16 @@ export async function setCheckin(
   return data as Checkin;
 }
 
-/** Checkins de una meta en los últimos N días (para % de cumplimiento). */
+/**
+ * % de cumplimiento de una meta en los últimos N días.
+ * El denominador se acota a los días que la meta ha existido (si se creó hace 2
+ * días, no se promedia sobre 7) para no castigar a las metas nuevas.
+ */
 export async function getCompletionRate(
   userId: string,
   goalId: string,
   days: number,
+  createdAt?: string,
 ): Promise<number> {
   const from = new Date();
   from.setDate(from.getDate() - (days - 1));
@@ -147,7 +196,36 @@ export async function getCompletionRate(
   if (error) throw error;
 
   const completed = (data ?? []).filter((c) => c.completed).length;
-  return Math.round((completed / days) * 100);
+
+  let denom = days;
+  if (createdAt) {
+    const elapsed = daysBetween(localDateString(new Date(createdAt)), localDateString()) + 1;
+    denom = Math.max(1, Math.min(days, elapsed));
+  }
+  return Math.round((completed / denom) * 100);
+}
+
+/**
+ * Días (YYYY-MM-DD) con al menos un check-in completado en los últimos N días.
+ * Para la tira de actividad semanal del Home.
+ */
+export async function getActiveDays(
+  userId: string,
+  days: number,
+): Promise<Set<string>> {
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  const fromStr = localDateString(from);
+
+  const { data, error } = await supabase
+    .from('sg_checkins')
+    .select('date,completed')
+    .eq('user_id', userId)
+    .eq('completed', true)
+    .gte('date', fromStr);
+  if (error) throw error;
+
+  return new Set((data ?? []).map((c) => c.date as string));
 }
 
 /** ¿Hay al menos un checkin completado hoy? (define si la racha cuenta). */
@@ -203,6 +281,19 @@ export async function addMessage(
     .single();
   if (error) throw error;
   return data as Message;
+}
+
+/**
+ * Borra TODOS los datos del usuario (mensajes, checkins, metas, perfil).
+ * La RLS permite borrar solo las filas propias. NOTA: la fila de `auth.users`
+ * debe borrarla una Edge Function con service role (ver CLAUDE.md); el cliente
+ * no puede. Por eso tras esto hay que cerrar sesión.
+ */
+export async function deleteAccountData(userId: string): Promise<void> {
+  await supabase.from('sg_messages').delete().eq('user_id', userId);
+  await supabase.from('sg_checkins').delete().eq('user_id', userId);
+  await supabase.from('sg_goals').delete().eq('user_id', userId);
+  await supabase.from('sg_profiles').delete().eq('id', userId);
 }
 
 /** Cuántos mensajes 'user' mandó hoy (para el límite del plan free). */

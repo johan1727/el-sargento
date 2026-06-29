@@ -1,9 +1,9 @@
 /**
- * Pantalla de celebración de ascenso de rango — estilo cómic ¡POW!
+ * Pantalla de celebración de ascenso de rango — rediseño dark con glow de acento.
  * Recibe el nuevo rango como parámetro de ruta (?rank=sargento).
  */
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Platform, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -13,7 +13,8 @@ import { useSession } from '../src/store/session';
 import { getCharacter } from '../src/constants/characters';
 import { ComicButton } from '../src/components/ComicButton';
 import { SergeantAvatar } from '../src/components/SergeantAvatar';
-import { COMIC, comicBorder, comicShadow } from '../src/constants/theme';
+import { Card } from '../src/components/Card';
+import { DARK, FONTS, RADIUS, accentGlow, tint } from '../src/constants/theme';
 
 const DECORATIONS = ['💥', '⚡', '🌟', '💫', '✨'];
 
@@ -22,6 +23,7 @@ export default function CelebrationScreen() {
   const { rank } = useLocalSearchParams<{ rank: string }>();
   const { profile } = useSession();
   const character = getCharacter(profile?.chosen_sergeant);
+  const accent = character.theme.accent;
   const r = getRank(rank as RankId);
 
   const popAnim = useRef(new Animated.Value(0)).current;
@@ -44,94 +46,90 @@ export default function CelebrationScreen() {
   }, [popAnim, bounceAnim]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COMIC.yellow }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        {/* Watermark: badge del rango gigante como fondo */}
-        <Text
-          style={{
-            position: 'absolute',
-            fontSize: 260,
-            opacity: 0.07,
-            top: '15%',
-          }}
-          aria-hidden="true"
-        >
+        {/* Badge del rango gigante de fondo, teñido del color del rango */}
+        <Text style={{ position: 'absolute', fontSize: 260, opacity: 0.06, top: '14%' }} aria-hidden>
           {r.badge}
         </Text>
 
-        {/* Rayas negras diagonales como speed lines de cómic */}
-        {[...Array(6)].map((_, i) => (
-          <View
+        {/* Destellos decorativos */}
+        {DECORATIONS.map((e, i) => (
+          <Text
             key={i}
             style={{
               position: 'absolute',
-              width: 3,
-              height: 600,
-              backgroundColor: COMIC.ink,
-              opacity: 0.04,
-              transform: [{ rotate: `${i * 30}deg` }],
+              fontSize: 34,
+              opacity: 0.8,
+              top: `${15 + i * 14}%` as any,
+              left: i % 2 === 0 ? (`${8 + i * 5}%` as any) : undefined,
+              right: i % 2 !== 0 ? (`${8 + i * 4}%` as any) : undefined,
+              transform: [{ rotate: `${i * 25 - 30}deg` }],
             }}
-          />
+          >
+            {e}
+          </Text>
         ))}
 
-        {/* Efectos decorativos */}
-        {DECORATIONS.map((e, i) => (
-          <Text key={i} style={{
-            position: 'absolute',
-            fontSize: 36,
-            top: `${15 + i * 14}%` as any,
-            left: i % 2 === 0 ? (`${8 + i * 5}%` as any) : undefined,
-            right: i % 2 !== 0 ? (`${8 + i * 4}%` as any) : undefined,
-            transform: [{ rotate: `${i * 25 - 30}deg` }],
-          }}>{e}</Text>
-        ))}
-
-        {/* Etiqueta ¡POW! */}
-        <View style={[comicBorder, comicShadow(8), {
-          backgroundColor: '#E01E37',
-          borderRadius: 24,
-          paddingHorizontal: 28,
-          paddingVertical: 12,
-          marginBottom: 24,
-          transform: [{ rotate: '-3deg' }],
-        }]}>
-          <Text style={{ fontFamily: 'Bangers', fontSize: 42, color: '#FFF', letterSpacing: 3 }}>¡POW!</Text>
+        {/* Etiqueta de logro */}
+        <View
+          style={[
+            {
+              backgroundColor: accent,
+              borderRadius: RADIUS.lg,
+              paddingHorizontal: 24,
+              paddingVertical: 10,
+              marginBottom: 24,
+            },
+            accentGlow(accent, 2),
+          ]}
+        >
+          <Text style={{ fontFamily: FONTS.display, fontSize: 36, color: '#0B0E13', letterSpacing: 2 }}>¡ASCENSO!</Text>
         </View>
 
-        <Text style={{ fontFamily: 'Bangers', fontSize: 26, color: COMIC.ink, letterSpacing: 1, marginBottom: 12, textAlign: 'center' }}>
+        <Text style={{ fontFamily: FONTS.display, fontSize: 24, color: DARK.textDim, letterSpacing: 1, marginBottom: 14, textAlign: 'center' }}>
           ¡ASCENDIDO A...!
         </Text>
 
         {/* Badge animada */}
-        <Animated.View style={{ transform: [{ scale: popAnim }, { translateY: bounceAnim }], marginBottom: 20 }}>
-          <View style={[comicBorder, comicShadow(8, r.color), {
-            width: 130, height: 130, borderRadius: 65,
-            backgroundColor: r.color,
-            alignItems: 'center', justifyContent: 'center',
-          }]}>
+        <Animated.View style={{ transform: [{ scale: popAnim }, { translateY: bounceAnim }], marginBottom: 18 }}>
+          <View
+            style={[
+              {
+                width: 130,
+                height: 130,
+                borderRadius: 65,
+                backgroundColor: r.color,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 3,
+                borderColor: accent,
+              },
+              accentGlow(accent, 2),
+            ]}
+          >
             <Text style={{ fontSize: 60 }}>{r.badge}</Text>
           </View>
         </Animated.View>
 
-        <Text style={{ fontFamily: 'Bangers', fontSize: 46, color: COMIC.ink, letterSpacing: 3, marginBottom: 8, textAlign: 'center' }}>
+        <Text style={{ fontFamily: FONTS.display, fontSize: 46, color: DARK.text, letterSpacing: 2, marginBottom: 8, textAlign: 'center' }}>
           {r.label.toUpperCase()}
         </Text>
 
         {/* Avatar + felicitación */}
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginVertical: 20 }}>
-          <SergeantAvatar sergeantId={character.id} size={72} />
-          <View style={[comicBorder, comicShadow(4), { backgroundColor: '#FFF', borderRadius: 16, padding: 14, maxWidth: 220 }]}>
-            <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 15, color: COMIC.ink }}>
+          <SergeantAvatar sergeantId={character.id} size={64} />
+          <Card alt elevation={1} style={{ padding: 14, maxWidth: 220, borderColor: tint(accent, 0.4) }}>
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, lineHeight: 21 }}>
               ¡ASÍ SE HACE, RECLUTA!{'\n'}¡Eres {r.label}! {r.badge}
             </Text>
-            <View style={{ position: 'absolute', bottom: 14, left: -11, width: 0, height: 0, borderTopWidth: 8, borderBottomWidth: 8, borderRightWidth: 12, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderRightColor: COMIC.ink }} />
-            <View style={{ position: 'absolute', bottom: 16, left: -7, width: 0, height: 0, borderTopWidth: 6, borderBottomWidth: 6, borderRightWidth: 10, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderRightColor: '#FFF' }} />
-          </View>
+          </Card>
         </View>
 
         <ComicButton
           label="¡A SEGUIR AVANZANDO!"
-          color={character.theme.primary}
+          color={accent}
+          textColor="#0B0E13"
           size="lg"
           fullWidth
           onPress={() => router.replace('/(app)')}

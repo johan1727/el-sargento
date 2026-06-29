@@ -17,13 +17,17 @@ import type { SergeantId } from '../constants/characters';
 import { CHARACTERS } from '../constants/characters';
 
 // Handler global — mostrar notificaciones aunque la app esté en foreground.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 /** Pide permisos. Devuelve true si están concedidos. */
 export async function requestNotificationPermission(): Promise<boolean> {

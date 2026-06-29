@@ -1,12 +1,10 @@
 /**
- * Home / "El Cuartel" — rediseño Brutalist.
+ * Home / "El Cuartel" — rediseño dark (Fitia oscuro + alma sargento).
  *
- * Diferenciadores visuales:
- * - Racha en Bangers 88px como elemento compositivo principal (domina sobre el fold)
- * - SergeantHeader full-bleed con color del sargento
- * - Color wash del sargento en cada tarjeta de meta
- * - ActionBurst decorativo en el header de progreso
- * - Metas en panel cómic con borde izquierdo grueso en color accent
+ * - Tarjeta héroe con la racha en Bangers grande + anillo de progreso del día.
+ * - Saludo del sargento en burbuja moderna.
+ * - Metas del día como tarjetas oscuras con check de acento.
+ * - FAB para hablar con el sargento.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -27,29 +25,32 @@ import {
   setCheckin,
   hasAnyCompletionToday,
   updateProfile,
+  getActiveDays,
 } from '../../src/lib/db';
 import {
   streakAfterCompletion,
   checkDemotion,
   rankDelta,
-  localDateString,
 } from '../../src/lib/streak';
 import { generateSergeantReply } from '../../src/lib/gemini';
 import { rankForStreak } from '../../src/constants/ranks';
 import type { GoalWithToday } from '../../src/types/database';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
 import { ComicBubble } from '../../src/components/ComicBubble';
-import { ComicButton } from '../../src/components/ComicButton';
 import { ComicCheckbox } from '../../src/components/ComicCheckbox';
-import { ActionBurst } from '../../src/components/ActionBurst';
-import { COMIC, comicBorder, comicShadow, comicWash, greetingForHour } from '../../src/constants/theme';
+import { Card } from '../../src/components/Card';
+import { ProgressBar } from '../../src/components/ProgressBar';
+import { WeekStrip } from '../../src/components/WeekStrip';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
+import { DARK, FONTS, RADIUS, accentGlow, greetingForHour, tint } from '../../src/constants/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { profile, user, refreshProfile, patchProfile } = useSession();
+  const { profile, user, patchProfile } = useSession();
   const character = getCharacter(profile?.chosen_sergeant);
+  const accent = character.theme.accent;
   const [goals, setGoals] = useState<GoalWithToday[]>([]);
+  const [activeDays, setActiveDays] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('');
@@ -58,8 +59,12 @@ export default function HomeScreen() {
 
   const loadGoals = useCallback(async () => {
     if (!user) return;
-    const data = await getGoalsWithToday(user.id);
+    const [data, active] = await Promise.all([
+      getGoalsWithToday(user.id),
+      getActiveDays(user.id, 7),
+    ]);
     setGoals(data);
+    setActiveDays(active);
   }, [user]);
 
   const didInit = useRef(false);
@@ -153,13 +158,14 @@ export default function HomeScreen() {
 
   const completedCount = goals.filter((g) => g.todayCheckin?.completed).length;
   const allDone = goals.length > 0 && completedCount === goals.length;
+  const dayPct = goals.length ? (completedCount / goals.length) * 100 : 0;
   const streak = profile?.current_streak ?? 0;
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: character.theme.dark, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={character.theme.accent} />
-        <Text style={{ fontFamily: 'Bangers', fontSize: 22, color: '#FFF', marginTop: 14, letterSpacing: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={accent} />
+        <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, marginTop: 14, letterSpacing: 1 }}>
           CARGANDO, RECLUTA...
         </Text>
       </SafeAreaView>
@@ -167,132 +173,103 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COMIC.paperWarm }} edges={['top']}>
-      {/* Header full-bleed del sargento */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
       {profile && (
         <SergeantHeader
           character={character}
           rank={profile.rank}
           streak={streak}
+          onPressSettings={() => router.push('/settings')}
         />
       )}
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={character.theme.primary}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />}
       >
-        {/* ── RACHA DOMINANTE — diferenciador Brutalist ── */}
-        <View
-          style={[
-            comicBorder,
-            comicShadow(6, character.theme.primary),
-            {
-              backgroundColor: COMIC.yellow,
-              borderTopWidth: 0,
-              marginHorizontal: 16,
-              marginTop: 16,
-              borderRadius: 20,
-              padding: 20,
-              flexDirection: 'row',
-              alignItems: 'center',
-              overflow: 'visible',
-            },
-          ]}
-        >
-          {/* Número de racha a 88px — domina el layout */}
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: 'Bangers',
-                fontSize: 88,
-                color: COMIC.ink,
-                lineHeight: 84,
-                letterSpacing: -2,
-                includeFontPadding: false,
-              }}
-            >
-              {streak}
-            </Text>
-            <Text
-              style={{
-                fontFamily: 'Bangers',
-                fontSize: 22,
-                color: character.theme.dark,
-                letterSpacing: 1,
-                marginTop: -4,
-              }}
-            >
-              🔥 DÍA{streak === 1 ? '' : 'S'} DE RACHA
-            </Text>
-            {profile?.longest_streak && profile.longest_streak > 0 && (
-              <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#555', marginTop: 4 }}>
-                Récord: {profile.longest_streak} días
+        {/* ── TARJETA HÉROE: RACHA + PROGRESO DEL DÍA ── */}
+        <Card accentColor={accent} tintOpacity={0.07} elevation={2} style={{ margin: 16, padding: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.5 }}>
+                RACHA ACTUAL
               </Text>
-            )}
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: FONTS.display,
+                    fontSize: 76,
+                    color: accent,
+                    lineHeight: 76,
+                    letterSpacing: -1,
+                    includeFontPadding: false,
+                  }}
+                >
+                  {streak}
+                </Text>
+                <Text style={{ fontFamily: FONTS.display, fontSize: 24, color: DARK.text, marginBottom: 12, letterSpacing: 1 }}>
+                  🔥 DÍA{streak === 1 ? '' : 'S'}
+                </Text>
+              </View>
+              {profile?.longest_streak && profile.longest_streak > 0 ? (
+                <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textMuted }}>
+                  Récord: {profile.longest_streak} días
+                </Text>
+              ) : null}
+            </View>
+
+            {/* Anillo del día (badge cuadrado moderno) */}
+            <View
+              style={[
+                {
+                  backgroundColor: allDone ? accent : DARK.surfaceAlt,
+                  borderRadius: RADIUS.lg,
+                  borderWidth: 1,
+                  borderColor: allDone ? accent : DARK.hairline,
+                  width: 84,
+                  height: 84,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+                allDone ? accentGlow(accent, 1) : null,
+              ]}
+            >
+              <Text style={{ fontFamily: FONTS.display, fontSize: 32, color: allDone ? '#0B0E13' : DARK.text, lineHeight: 34 }}>
+                {completedCount}/{goals.length}
+              </Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 10, color: allDone ? '#0B0E13' : DARK.textDim, letterSpacing: 1 }}>
+                HOY
+              </Text>
+            </View>
           </View>
 
-          {/* Progreso del día */}
-          <View
-            style={[
-              comicBorder,
-              {
-                backgroundColor: allDone ? character.theme.primary : '#FFFFFF',
-                borderRadius: 16,
-                width: 90,
-                height: 90,
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-              },
-            ]}
-          >
-            <Text style={{ fontFamily: 'Bangers', fontSize: 36, color: allDone ? '#FFF' : COMIC.ink, lineHeight: 38 }}>
-              {completedCount}/{goals.length}
-            </Text>
-            <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 11, color: allDone ? '#DDD' : '#888', textAlign: 'center' }}>
-              HOY
-            </Text>
-          </View>
+          {/* Barra de progreso del día */}
+          {goals.length > 0 ? (
+            <View style={{ marginTop: 16 }}>
+              <ProgressBar value={dayPct} color={accent} height={8} />
+            </View>
+          ) : null}
+        </Card>
 
-          {/* Burst decorativo */}
-          <ActionBurst
-            text={allDone ? '¡BOOM!' : '¡ZAS!'}
-            color={allDone ? character.theme.accent : '#FF6B6B'}
-            size="sm"
-            rotate={12}
-            position="absolute"
-            top={-14}
-            right={16}
-          />
-        </View>
+        {/* ── TIRA DE ACTIVIDAD SEMANAL ── */}
+        <Card elevation={1} style={{ marginHorizontal: 16, marginBottom: 4, padding: 16 }}>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.5, marginBottom: 12 }}>
+            ÚLTIMOS 7 DÍAS
+          </Text>
+          <WeekStrip activeDays={activeDays} accent={accent} />
+        </Card>
 
         {/* ── SALUDO DEL SARGENTO ── */}
-        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginHorizontal: 16, marginTop: 18 }}>
-          <SergeantAvatar sergeantId={character.id} size={42} shadow={3} />
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginHorizontal: 16, marginTop: 4 }}>
+          <SergeantAvatar sergeantId={character.id} size={40} shadow={1} />
           <View style={{ flex: 1 }}>
             {reactionLoading ? (
-              <View
-                style={[
-                  comicBorder,
-                  comicShadow(4),
-                  { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14 },
-                ]}
-              >
-                <ActivityIndicator color={character.theme.primary} />
-              </View>
+              <Card alt elevation={0} style={{ padding: 14, alignSelf: 'flex-start' }}>
+                <ActivityIndicator color={accent} />
+              </Card>
             ) : (
-              <ComicBubble
-                from="sergeant"
-                text={reaction ?? greeting ?? '¡A cumplir, recluta!'}
-                color="#FFFFFF"
-              />
+              <ComicBubble from="sergeant" accent={accent} text={reaction ?? greeting ?? '¡A cumplir, recluta!'} />
             )}
           </View>
         </View>
@@ -304,139 +281,104 @@ export default function HomeScreen() {
             alignItems: 'center',
             justifyContent: 'space-between',
             marginHorizontal: 16,
-            marginTop: 22,
+            marginTop: 24,
             marginBottom: 12,
           }}
         >
-          <Text style={{ fontFamily: 'Bangers', fontSize: 28, color: COMIC.ink, letterSpacing: 1 }}>
+          <Text style={{ fontFamily: FONTS.display, fontSize: 26, color: DARK.text, letterSpacing: 1 }}>
             METAS DE HOY
           </Text>
-          <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#777' }}>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, textTransform: 'capitalize' }}>
             {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' })}
           </Text>
         </View>
 
         <View style={{ paddingHorizontal: 16, gap: 10 }}>
           {goals.length === 0 ? (
-            <View
-              style={[
-                comicBorder,
-                comicShadow(5),
-                { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, alignItems: 'center' },
-              ]}
-            >
-              <Text style={{ fontFamily: 'Bangers', fontSize: 22, color: '#AAA', letterSpacing: 1, textAlign: 'center' }}>
+            <Card elevation={1} style={{ padding: 24, alignItems: 'center' }}>
+              <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.textDim, letterSpacing: 1, textAlign: 'center' }}>
                 SIN METAS ACTIVAS
               </Text>
-              <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 14, color: '#BBB', marginTop: 4 }}>
+              <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: DARK.textMuted, marginTop: 4 }}>
                 Ve a "Metas" para agregar.
               </Text>
-            </View>
+            </Card>
           ) : (
             goals.map((goal) => {
               const done = !!goal.todayCheckin?.completed;
               return (
-                <View
+                <Pressable
                   key={goal.id}
-                  style={[
-                    comicBorder,
-                    comicShadow(5),
-                    {
-                      backgroundColor: done
-                        ? comicWash(character.theme.primary, 0.18)
-                        : '#FFFFFF',
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    },
-                  ]}
+                  onPress={() => handleToggle(goal)}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
                 >
-                  {/* Franja izquierda en color del sargento — elemento compositivo */}
-                  <View
-                    style={{
-                      width: 8,
-                      alignSelf: 'stretch',
-                      backgroundColor: done ? character.theme.primary : character.theme.accent,
-                      opacity: done ? 1 : 0.5,
-                    }}
-                  />
-                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}>
-                    <ComicCheckbox
-                      checked={done}
-                      onToggle={() => handleToggle(goal)}
-                      accent={character.theme.primary}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontFamily: 'Nunito_700Bold',
-                          fontSize: 17,
-                          color: done ? '#666' : COMIC.ink,
-                          textDecorationLine: done ? 'line-through' : 'none',
-                        }}
-                      >
-                        {goal.title}
-                      </Text>
-                      <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: '#999', marginTop: 2 }}>
-                        {goal.type === 'habit' ? 'Hábito' : 'Proyecto'}
-                      </Text>
+                  <Card
+                    accentColor={done ? accent : undefined}
+                    tintOpacity={0.1}
+                    elevation={1}
+                    style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }}
+                  >
+                    {/* Franja de acento */}
+                    <View style={{ width: 4, alignSelf: 'stretch', backgroundColor: done ? accent : tint(accent, 0.35) }} />
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}>
+                      <View pointerEvents="none">
+                        <ComicCheckbox checked={done} onToggle={() => handleToggle(goal)} accent={accent} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontFamily: FONTS.bodyBold,
+                            fontSize: 16,
+                            color: done ? DARK.textDim : DARK.text,
+                            textDecorationLine: done ? 'line-through' : 'none',
+                          }}
+                        >
+                          {goal.title}
+                        </Text>
+                        <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted, marginTop: 2 }}>
+                          {goal.type === 'habit' ? 'Hábito' : 'Proyecto'}
+                        </Text>
+                      </View>
                     </View>
-                    <Text style={{ fontSize: 28 }}>{done ? '✅' : '⬜'}</Text>
-                  </View>
-                </View>
+                  </Card>
+                </Pressable>
               );
             })
           )}
         </View>
 
         {/* ── TODO COMPLETADO ── */}
-        {allDone && (
-          <View
-            style={[
-              comicBorder,
-              comicShadow(7),
-              {
-                backgroundColor: character.theme.primary,
-                borderRadius: 20,
-                margin: 16,
-                padding: 22,
-                alignItems: 'center',
-              },
-            ]}
-          >
-            <Text style={{ fontFamily: 'Bangers', fontSize: 38, color: COMIC.yellow, letterSpacing: 2, textAlign: 'center' }}>
-              💥 ¡MISIÓN CUMPLIDA! 💥
+        {allDone ? (
+          <Card accentColor={accent} tintOpacity={0.14} elevation={2} style={{ margin: 16, padding: 22, alignItems: 'center', borderColor: tint(accent, 0.5) }}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 34, color: accent, letterSpacing: 1.5, textAlign: 'center' }}>
+              ¡MISIÓN CUMPLIDA!
             </Text>
-            <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#FFFFFF', marginTop: 6, textAlign: 'center' }}>
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.text, marginTop: 4, textAlign: 'center' }}>
               Todas las metas del día, recluta.
             </Text>
-          </View>
-        )}
+          </Card>
+        ) : null}
       </ScrollView>
 
-      {/* FAB — pulgar-friendly, zona inferior */}
-      <View style={{ position: 'absolute', bottom: 84, right: 16 }}>
+      {/* FAB — hablar con el sargento */}
+      <View style={{ position: 'absolute', bottom: 88, right: 16 }}>
         <Pressable
           onPress={() => router.push('/(app)/chat')}
           style={[
-            comicBorder,
-            comicShadow(6),
             {
-              backgroundColor: character.theme.primary,
-              borderRadius: 999,
-              paddingVertical: 16,
-              paddingHorizontal: 24,
+              backgroundColor: accent,
+              borderRadius: RADIUS.pill,
+              paddingVertical: 15,
+              paddingHorizontal: 22,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 10,
             },
+            accentGlow(accent, 2),
           ]}
         >
-          <Text style={{ fontSize: 24 }}>💬</Text>
-          <Text style={{ fontFamily: 'Bangers', fontSize: 20, color: '#FFF', letterSpacing: 1 }}>
-            HABLAR
-          </Text>
+          <Text style={{ fontSize: 22 }}>💬</Text>
+          <Text style={{ fontFamily: FONTS.display, fontSize: 20, color: '#0B0E13', letterSpacing: 1 }}>HABLAR</Text>
         </Pressable>
       </View>
     </SafeAreaView>

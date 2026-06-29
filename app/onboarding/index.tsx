@@ -1,9 +1,9 @@
 /**
- * Onboarding paso 1: Bienvenida + selección de sargento.
- * Muestra las 4 cards ilustradas con botón "Escuchar" (TTS sample).
+ * Onboarding paso 1: Bienvenida + selección de sargento (rediseño dark).
+ * Cards oscuras con el acento de cada sargento + botón "Escuchar" (TTS sample).
  */
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -16,8 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CHARACTER_LIST, type SergeantId } from '../../src/constants/characters';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { ComicButton } from '../../src/components/ComicButton';
-import { ComicCard } from '../../src/components/ComicCard';
-import { COMIC, comicBorder, comicShadow } from '../../src/constants/theme';
+import { DARK, FONTS, RADIUS, accentGlow, tint } from '../../src/constants/theme';
 import { speak, stopSpeech } from '../../src/lib/tts';
 
 // Guardamos la elección en módulo para que el paso siguiente la lea.
@@ -44,91 +43,67 @@ export default function OnboardingSelectScreen() {
     router.push('/onboarding/goals');
   };
 
+  const selectedChar = CHARACTER_LIST.find((c) => c.id === selected);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COMIC.paperWarm }}>
-      <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Indicador de paso — esquina superior derecha */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-          <View>
-            <Text
-              style={{
-                fontFamily: 'Bangers',
-                fontSize: 62,
-                color: COMIC.ink,
-                letterSpacing: 3,
-                lineHeight: 64,
-              }}
-            >
+    <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        {/* Encabezado + paso */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 56, color: DARK.text, letterSpacing: 2, lineHeight: 58 }}>
               EL SARGENTO
             </Text>
-            <View
-              style={[
-                comicBorder,
-                {
-                  backgroundColor: COMIC.yellow,
-                  paddingHorizontal: 12,
-                  paddingVertical: 3,
-                  borderRadius: 6,
-                  alignSelf: 'flex-start',
-                },
-              ]}
-            >
-              <Text style={{ fontFamily: 'Nunito_800ExtraBold', fontSize: 13, color: COMIC.ink }}>
-                Coach militar de productividad
-              </Text>
-            </View>
-          </View>
-
-          {/* Paso N/4 en Bangers como elemento estructural */}
-          <View style={[comicBorder, comicShadow(3), { backgroundColor: COMIC.ink, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4 }]}>
-            <Text style={{ fontFamily: 'Bangers', fontSize: 18, color: COMIC.yellow, letterSpacing: 1 }}>
-              1 / 4
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim, marginTop: 4 }}>
+              Coach militar de productividad
             </Text>
+          </View>
+          <View
+            style={{
+              backgroundColor: DARK.surfaceAlt,
+              borderWidth: 1,
+              borderColor: DARK.hairline,
+              borderRadius: RADIUS.sm,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              marginTop: 4,
+            }}
+          >
+            <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: DARK.textDim, letterSpacing: 1 }}>1 / 4</Text>
           </View>
         </View>
 
-        <Text
-          style={{
-            fontFamily: 'Bangers',
-            fontSize: 28,
-            color: COMIC.ink,
-            letterSpacing: 1,
-            marginBottom: 16,
-          }}
-        >
+        <Text style={{ fontFamily: FONTS.display, fontSize: 28, color: DARK.text, letterSpacing: 1, marginBottom: 16 }}>
           ELIGE TU SARGENTO:
         </Text>
 
         {CHARACTER_LIST.map((c) => {
           const isSelected = selected === c.id;
+          const accent = c.theme.accent;
           return (
             <Pressable key={c.id} onPress={() => setSelected(c.id)} style={{ marginBottom: 14 }}>
-              <ComicCard
-                style={{
-                  backgroundColor: isSelected ? c.theme.primary : '#FFFFFF',
-                  borderRadius: 18,
-                  padding: 16,
-                  borderColor: isSelected ? c.theme.accent : COMIC.ink,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 14,
-                  ...comicShadow(isSelected ? 6 : 4),
-                }}
+              <View
+                style={[
+                  {
+                    backgroundColor: isSelected ? tint(accent, 0.12) : DARK.surface,
+                    borderRadius: RADIUS.lg,
+                    borderWidth: isSelected ? 1.5 : 1,
+                    borderColor: isSelected ? accent : DARK.hairline,
+                    padding: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 14,
+                  },
+                  isSelected ? accentGlow(accent, 1) : null,
+                ]}
               >
-                <SergeantAvatar sergeantId={c.id} size={68} />
+                <SergeantAvatar sergeantId={c.id} size={64} />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    <Text style={{ fontFamily: 'Bangers', fontSize: 22, color: isSelected ? '#FFFFFF' : COMIC.ink, letterSpacing: 1 }}>
-                      {c.name}
-                    </Text>
+                    <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 0.8 }}>{c.name}</Text>
                     <Text style={{ fontSize: 18 }}>{c.flag}</Text>
                   </View>
-                  <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 13, color: isSelected ? '#E8E8E8' : '#555', lineHeight: 18 }}>
-                    {c.tagline}
-                  </Text>
+                  <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, lineHeight: 18 }}>{c.tagline}</Text>
                   <Pressable
                     onPress={() => handleListen(c.id, c.sampleLine)}
                     style={{
@@ -137,53 +112,52 @@ export default function OnboardingSelectScreen() {
                       alignItems: 'center',
                       gap: 6,
                       alignSelf: 'flex-start',
-                      paddingVertical: 4,
+                      paddingVertical: 5,
                       paddingHorizontal: 12,
-                      borderRadius: 999,
-                      borderWidth: 2,
-                      borderColor: isSelected ? '#FFFFFF' : COMIC.ink,
-                      backgroundColor: playing === c.id ? '#FFD23F' : 'transparent',
+                      borderRadius: RADIUS.pill,
+                      borderWidth: 1,
+                      borderColor: playing === c.id ? accent : DARK.hairlineStrong,
+                      backgroundColor: playing === c.id ? tint(accent, 0.18) : 'transparent',
                     }}
                   >
                     {playing === c.id ? (
-                      <ActivityIndicator size="small" color={COMIC.ink} />
+                      <ActivityIndicator size="small" color={accent} />
                     ) : (
-                      <Text style={{ fontSize: 16 }}>🔊</Text>
+                      <Text style={{ fontSize: 14 }}>🔊</Text>
                     )}
-                    <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: isSelected ? '#FFFFFF' : COMIC.ink }}>
+                    <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: playing === c.id ? accent : DARK.textDim }}>
                       Escuchar
                     </Text>
                   </Pressable>
                 </View>
 
-                {isSelected && (
+                {isSelected ? (
                   <View
                     style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 15,
-                      backgroundColor: c.theme.accent,
-                      borderWidth: 2,
-                      borderColor: '#FFFFFF',
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: accent,
                       alignItems: 'center',
                       justifyContent: 'center',
                       position: 'absolute',
-                      top: 10,
-                      right: 10,
+                      top: 12,
+                      right: 12,
                     }}
                   >
-                    <Text style={{ fontSize: 16, color: '#FFFFFF' }}>✓</Text>
+                    <Text style={{ fontSize: 15, color: '#0B0E13', fontWeight: '900' }}>✓</Text>
                   </View>
-                )}
-              </ComicCard>
+                ) : null}
+              </View>
             </Pressable>
           );
         })}
 
-        <View style={{ marginTop: 10, alignItems: 'center' }}>
+        <View style={{ marginTop: 10 }}>
           <ComicButton
-            label={`¡A ENTRENAR CON ${CHARACTER_LIST.find(c => c.id === selected)?.name.toUpperCase()}!`}
-            color={CHARACTER_LIST.find(c => c.id === selected)?.theme.primary ?? COMIC.ink}
+            label={`¡A ENTRENAR CON ${selectedChar?.name.toUpperCase()}!`}
+            color={selectedChar?.theme.accent ?? '#FFFFFF'}
+            textColor="#0B0E13"
             size="lg"
             fullWidth
             onPress={handleNext}

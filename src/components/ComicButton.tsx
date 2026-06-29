@@ -1,11 +1,14 @@
 /**
- * Botón Brutalist: borde negro grueso, sombra dura 6px que se hunde al presionar.
- * Pulgar-friendly: área mínima 52px. Texto Bangers en mayúsculas como elemento compositivo.
+ * Botón principal — sólido, redondeado, con glow del color de acento.
+ * Pulgar-friendly: mínimo 52px. Etiqueta en Bangers (alma militar) sobre
+ * estructura moderna. Hunde sutilmente al presionar (scale + glow off).
+ *
+ * Mantiene el nombre `ComicButton` y su API para no romper las pantallas.
  */
 import { Pressable, Text, View, Platform, type PressableProps } from 'react-native';
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { comicBorder, comicShadow, COMIC } from '../constants/theme';
+import { DARK, FONTS, RADIUS, accentGlow } from '../constants/theme';
 
 interface ComicButtonProps extends Omit<PressableProps, 'style'> {
   label: string;
@@ -15,28 +18,31 @@ interface ComicButtonProps extends Omit<PressableProps, 'style'> {
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   disabled?: boolean;
+  /** botón secundario: contorno sobre superficie oscura, sin relleno */
+  variant?: 'solid' | 'ghost';
 }
 
 const SIZES = {
-  sm: { padV: 10, padH: 16, font: 17, shadow: 4, radius: 12 },
-  md: { padV: 14, padH: 22, font: 22, shadow: 5, radius: 14 },
-  lg: { padV: 18, padH: 28, font: 28, shadow: 6, radius: 16 },
+  sm: { padV: 11, padH: 16, font: 16, radius: RADIUS.md },
+  md: { padV: 15, padH: 22, font: 20, radius: RADIUS.md },
+  lg: { padV: 18, padH: 28, font: 26, radius: RADIUS.lg },
 };
 
 export function ComicButton({
   label,
-  color = COMIC.ink,
+  color = '#FFFFFF',
   textColor = '#FFFFFF',
   icon,
   size = 'md',
   fullWidth,
   disabled,
+  variant = 'solid',
   onPress,
   ...rest
 }: ComicButtonProps) {
   const [pressed, setPressed] = useState(false);
   const s = SIZES[size];
-  const offset = pressed ? 0 : s.shadow;
+  const isGhost = variant === 'ghost';
 
   return (
     <Pressable
@@ -45,27 +51,24 @@ export function ComicButton({
       onPress={(e) => {
         if (disabled) return;
         if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
         }
         onPress?.(e);
       }}
       disabled={disabled}
       style={{
         alignSelf: fullWidth ? 'stretch' : 'flex-start',
-        transform: [
-          { translateX: pressed ? s.shadow : 0 },
-          { translateY: pressed ? s.shadow : 0 },
-        ],
+        transform: [{ scale: pressed ? 0.97 : 1 }],
         opacity: disabled ? 0.4 : 1,
       }}
       {...rest}
     >
       <View
         style={[
-          comicBorder,
-          comicShadow(offset),
           {
-            backgroundColor: color,
+            backgroundColor: isGhost ? 'transparent' : color,
+            borderWidth: isGhost ? 1.5 : 0,
+            borderColor: isGhost ? color : 'transparent',
             paddingVertical: s.padV,
             paddingHorizontal: s.padH,
             borderRadius: s.radius,
@@ -75,17 +78,16 @@ export function ComicButton({
             gap: 10,
             minHeight: 52,
           },
+          !isGhost && !disabled ? accentGlow(color, 1) : null,
         ]}
       >
-        {icon ? (
-          <Text style={{ fontSize: s.font }}>{icon}</Text>
-        ) : null}
+        {icon ? <Text style={{ fontSize: s.font }}>{icon}</Text> : null}
         <Text
           style={{
-            fontFamily: 'Bangers',
+            fontFamily: FONTS.display,
             fontSize: s.font,
-            color: textColor,
-            letterSpacing: 1.5,
+            color: isGhost ? color : textColor,
+            letterSpacing: 1.2,
             textAlign: 'center',
             includeFontPadding: false,
           }}

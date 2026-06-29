@@ -1,7 +1,6 @@
 /**
- * Pantalla de rangos — Brutalist.
- * Racha y rango actual en Bangers grande dominando el layout.
- * Camino de rangos como lista vertical con línea de progreso.
+ * Pantalla de rangos — rediseño dark.
+ * Rango actual destacado en una tarjeta + camino de rangos como timeline vertical.
  */
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,116 +9,82 @@ import { useSession } from '../../src/store/session';
 import { getCharacter } from '../../src/constants/characters';
 import { RANKS, rankIndex, getRank, nextRankProgress } from '../../src/constants/ranks';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
-import { ActionBurst } from '../../src/components/ActionBurst';
-import { COMIC, comicBorder, comicShadow, comicWash } from '../../src/constants/theme';
+import { Card } from '../../src/components/Card';
+import { ProgressBar } from '../../src/components/ProgressBar';
+import { DARK, FONTS, RADIUS, accentGlow, softShadow, tint } from '../../src/constants/theme';
 
 export default function RanksScreen() {
   const { profile } = useSession();
   const character = getCharacter(profile?.chosen_sergeant);
+  const accent = character.theme.accent;
   const streak = profile?.current_streak ?? 0;
   const currentRank = getRank(profile?.rank);
   const { next, daysToNext } = nextRankProgress(streak);
   const currentIdx = rankIndex(currentRank.id);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COMIC.paperWarm }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
       <SergeantHeader character={character} rank={profile?.rank} streak={streak} />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-
-        {/* Rango actual — racha dominante en Bangers grande */}
-        <View
-          style={[
-            comicBorder,
-            comicShadow(7, character.theme.primary),
-            {
-              backgroundColor: character.theme.dark,
-              margin: 16,
-              borderRadius: 20,
-              padding: 22,
-              overflow: 'visible',
-            },
-          ]}
-        >
-          <ActionBurst
-            text="¡RANGO!"
-            color={character.theme.accent}
-            size="sm"
-            rotate={-6}
-            position="absolute"
-            top={-14}
-            left={18}
-          />
-
-          <Text style={{ fontFamily: 'Bangers', fontSize: 18, color: '#AAAAAA', letterSpacing: 1, marginBottom: 4 }}>
+        {/* Rango actual */}
+        <Card accentColor={accent} tintOpacity={0.08} elevation={2} style={{ margin: 16, padding: 22 }}>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.5, marginBottom: 10 }}>
             RANGO ACTUAL
           </Text>
 
-          {/* Insignia grande */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <View
               style={[
-                comicBorder,
-                comicShadow(5, currentRank.color),
                 {
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
+                  width: 76,
+                  height: 76,
+                  borderRadius: 38,
                   backgroundColor: currentRank.color,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderColor: COMIC.yellow,
-                  borderWidth: 4,
+                  borderWidth: 2,
+                  borderColor: accent,
                 },
+                accentGlow(accent, 1),
               ]}
             >
-              <Text style={{ fontSize: 40 }}>{currentRank.badge}</Text>
+              <Text style={{ fontSize: 38 }}>{currentRank.badge}</Text>
             </View>
-            <View>
-              <Text style={{ fontFamily: 'Bangers', fontSize: 42, color: COMIC.yellow, letterSpacing: 2, lineHeight: 44 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: FONTS.display, fontSize: 36, color: DARK.text, letterSpacing: 1, lineHeight: 38 }}>
                 {currentRank.label.toUpperCase()}
               </Text>
-              {/* Racha en grande */}
-              <Text style={{ fontFamily: 'Bangers', fontSize: 52, color: '#FFFFFF', lineHeight: 50, letterSpacing: -1 }}>
+              <Text style={{ fontFamily: FONTS.display, fontSize: 40, color: accent, lineHeight: 42, letterSpacing: -0.5 }}>
                 🔥 {streak}
               </Text>
-              <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 13, color: '#888' }}>
+              <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted }}>
                 días de racha · Récord: {profile?.longest_streak ?? 0}
               </Text>
             </View>
           </View>
 
-          {/* Barra de progreso al siguiente rango */}
-          {next && (
-            <View style={{ marginTop: 6 }}>
+          {next ? (
+            <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#AAA' }}>
+                <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim }}>
                   → {next.label} {next.badge}
                 </Text>
-                <Text style={{ fontFamily: 'Bangers', fontSize: 16, color: COMIC.yellow }}>
+                <Text style={{ fontFamily: FONTS.display, fontSize: 16, color: accent, letterSpacing: 0.5 }}>
                   {daysToNext} día{daysToNext === 1 ? '' : 's'}
                 </Text>
               </View>
-              <View style={{ height: 12, backgroundColor: '#333', borderRadius: 6, overflow: 'hidden', borderWidth: 2, borderColor: '#555' }}>
-                <View
-                  style={{
-                    height: '100%',
-                    width: `${Math.min(100, (streak / next.minStreak) * 100)}%`,
-                    backgroundColor: next.color,
-                    borderRadius: 4,
-                  }}
-                />
-              </View>
+              <ProgressBar value={(streak / next.minStreak) * 100} color={accent} height={10} />
             </View>
-          )}
-        </View>
+          ) : null}
+        </Card>
 
         {/* Camino de rangos */}
-        <Text style={{ fontFamily: 'Bangers', fontSize: 24, color: COMIC.ink, letterSpacing: 1, marginHorizontal: 16, marginBottom: 12 }}>
+        <Text style={{ fontFamily: FONTS.display, fontSize: 24, color: DARK.text, letterSpacing: 1, marginHorizontal: 16, marginBottom: 12 }}>
           CAMINO AL GENERALATO
         </Text>
 
-        <View style={{ paddingHorizontal: 16, gap: 0 }}>
+        <View style={{ paddingHorizontal: 16 }}>
           {[...RANKS].reverse().map((rank, i) => {
             const rankIdx = RANKS.length - 1 - i;
             const isReached = rankIdx <= currentIdx;
@@ -128,100 +93,93 @@ export default function RanksScreen() {
 
             return (
               <View key={rank.id} style={{ flexDirection: 'row', alignItems: 'stretch' }}>
-                {/* Línea vertical + badge */}
+                {/* Timeline: badge + línea */}
                 <View style={{ width: 56, alignItems: 'center' }}>
                   <View
                     style={[
-                      comicBorder,
-                      isCurrent && comicShadow(5, rank.color),
                       {
-                        width: 52,
-                        height: 52,
-                        borderRadius: 26,
-                        backgroundColor: isReached ? rank.color : '#E0E0E0',
+                        width: 50,
+                        height: 50,
+                        borderRadius: 25,
+                        backgroundColor: isReached ? rank.color : DARK.surfaceAlt,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderColor: isCurrent ? COMIC.yellow : COMIC.ink,
-                        borderWidth: isCurrent ? 4 : 3,
+                        borderWidth: isCurrent ? 2 : 1,
+                        borderColor: isCurrent ? accent : DARK.hairlineStrong,
                         zIndex: 2,
                       },
+                      isCurrent ? accentGlow(accent, 1) : isReached ? softShadow(1) : null,
                     ]}
                   >
-                    <Text style={{ fontSize: isReached ? 24 : 20, opacity: isReached ? 1 : 0.35 }}>
+                    <Text style={{ fontSize: isReached ? 24 : 18, opacity: isReached ? 1 : 0.4 }}>
                       {isReached ? rank.badge : '🔒'}
                     </Text>
                   </View>
-                  {!isLast && (
+                  {!isLast ? (
                     <View
                       style={{
-                        width: 4,
+                        width: 3,
                         flex: 1,
-                        minHeight: 20,
-                        backgroundColor: isReached ? rank.color : '#DDD',
+                        minHeight: 18,
+                        backgroundColor: isReached ? tint(rank.color, 0.6) : DARK.hairline,
                         marginVertical: 2,
-                        zIndex: 1,
                       }}
                     />
-                  )}
+                  ) : null}
                 </View>
 
                 {/* Info del rango */}
                 <View
-                  style={[
-                    comicBorder,
-                    isCurrent && { borderColor: COMIC.yellow, borderWidth: 3 },
-                    {
-                      flex: 1,
-                      backgroundColor: isCurrent
-                        ? comicWash(rank.color, 0.18)
-                        : isReached
-                        ? '#FFFFFF'
-                        : '#F5F5F5',
-                      borderRadius: 14,
-                      padding: 12,
-                      marginLeft: 8,
-                      marginBottom: 10,
-                    },
-                  ]}
+                  style={{
+                    flex: 1,
+                    backgroundColor: isCurrent ? tint(accent, 0.1) : DARK.surface,
+                    borderRadius: RADIUS.md,
+                    borderWidth: 1,
+                    borderColor: isCurrent ? tint(accent, 0.5) : DARK.hairline,
+                    padding: 12,
+                    marginLeft: 8,
+                    marginBottom: 10,
+                    opacity: isReached ? 1 : 0.6,
+                  }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text
                       style={{
-                        fontFamily: 'Bangers',
-                        fontSize: isCurrent ? 24 : 20,
-                        color: isReached ? COMIC.ink : '#BBB',
-                        letterSpacing: 1,
+                        fontFamily: FONTS.display,
+                        fontSize: isCurrent ? 23 : 19,
+                        color: isReached ? DARK.text : DARK.textMuted,
+                        letterSpacing: 0.8,
                       }}
                     >
                       {rank.label.toUpperCase()}
-                      {isCurrent ? ' ◀ AQUÍ' : ''}
+                      {isCurrent ? '  ◀ AQUÍ' : ''}
                     </Text>
-                    <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#999' }}>
+                    <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textMuted }}>
                       {rank.minStreak}d
                     </Text>
                   </View>
-                  {isCurrent && (
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: '#666', marginTop: 2 }}>
+                  {isCurrent ? (
+                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textDim, marginTop: 2 }}>
                       Racha mínima: {rank.minStreak} días
                     </Text>
-                  )}
+                  ) : null}
                 </View>
               </View>
             );
           })}
         </View>
 
-        <View style={[comicBorder, { backgroundColor: '#FFF3CD', borderRadius: 12, padding: 14, margin: 16 }]}>
-          <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: COMIC.ink }}>
+        <Card alt elevation={0} style={{ padding: 14, margin: 16, borderColor: tint('#F5B843', 0.4) }}>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: '#F5B843' }}>
             ⚠️ 3 días fallidos seguidos = bajas un rango. Sin excusas.
           </Text>
-        </View>
+        </Card>
 
-        <View style={[comicBorder, { backgroundColor: '#F0F0F0', borderRadius: 12, padding: 14, marginHorizontal: 16 }]}>
-          <Text style={{ fontFamily: 'Bangers', fontSize: 18, color: '#AAA', letterSpacing: 1 }}>
+        <Card elevation={0} style={{ padding: 14, marginHorizontal: 16 }}>
+          <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: DARK.textMuted, letterSpacing: 1 }}>
             🏆 RANKING vs. AMIGOS — PRÓXIMAMENTE
           </Text>
-        </View>
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );

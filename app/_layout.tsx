@@ -20,8 +20,9 @@ import {
 } from '@expo-google-fonts/nunito';
 
 import { SessionProvider, useSession } from '../src/store/session';
+import { DialogProvider } from '../src/components/Dialog';
 import { hasFullAccess } from '../src/lib/streak';
-import { COMIC } from '../src/constants/theme';
+import { DARK } from '../src/constants/theme';
 
 function NavigationGuard({ children }: { children: React.ReactNode }) {
   const { loading, session, profile } = useSession();
@@ -34,6 +35,9 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
     const inOnboarding = segments[0] === 'onboarding';
     const inPaywall = segments[0] === 'paywall';
     const inApp = segments[0] === '(app)';
+
+    // Las páginas legales son accesibles siempre (requisito de tiendas).
+    if (segments[0] === 'legal') return;
 
     if (!session) {
       // Sin sesión → onboarding
@@ -58,7 +62,7 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: COMIC.ink }} />
+      <View style={{ flex: 1, backgroundColor: DARK.bg }} />
     );
   }
 
@@ -74,17 +78,19 @@ export default function RootLayout() {
   });
 
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: COMIC.ink }} />;
+    return <View style={{ flex: 1, backgroundColor: DARK.bg }} />;
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SessionProvider>
-          <StatusBar style="light" />
-          <NavigationGuard>
-            <Slot />
-          </NavigationGuard>
+          <DialogProvider>
+            <StatusBar style="light" />
+            <NavigationGuard>
+              <Slot />
+            </NavigationGuard>
+          </DialogProvider>
         </SessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
