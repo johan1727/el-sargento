@@ -11,19 +11,20 @@ import { getCharacter } from '../../src/constants/characters';
 import { ComicButton } from '../../src/components/ComicButton';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { Card } from '../../src/components/Card';
+import { t } from '../../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../../src/constants/theme';
 
 export let pendingCheckinHour = 8;
 
 const HOUR_OPTIONS = [
-  { hour: 6, label: '6:00 AM', emoji: '🌅', note: 'Madrugador' },
-  { hour: 7, label: '7:00 AM', emoji: '☀️', note: 'Tempranero' },
-  { hour: 8, label: '8:00 AM', emoji: '🏃', note: 'Estándar (recomendado)' },
-  { hour: 9, label: '9:00 AM', emoji: '☕', note: 'Con café' },
-  { hour: 12, label: '12:00 PM', emoji: '🌞', note: 'Mediodía' },
-  { hour: 18, label: '6:00 PM', emoji: '🌆', note: 'Al salir del trabajo' },
-  { hour: 20, label: '8:00 PM', emoji: '🌙', note: 'Noctámbulo' },
-  { hour: 21, label: '9:00 PM', emoji: '🌃', note: 'Noche' },
+  { hour: 6, label: '6:00 AM', emoji: '🌅', note: 'early' },
+  { hour: 7, label: '7:00 AM', emoji: '☀️', note: 'earlyish' },
+  { hour: 8, label: '8:00 AM', emoji: '🏃', note: 'standard' },
+  { hour: 9, label: '9:00 AM', emoji: '☕', note: 'coffee' },
+  { hour: 12, label: '12:00 PM', emoji: '🌞', note: 'noon' },
+  { hour: 18, label: '6:00 PM', emoji: '🌆', note: 'afterWork' },
+  { hour: 20, label: '8:00 PM', emoji: '🌙', note: 'nightOwl' },
+  { hour: 21, label: '9:00 PM', emoji: '🌃', note: 'night' },
 ];
 
 export default function OnboardingScheduleScreen() {
@@ -45,16 +46,16 @@ export default function OnboardingScheduleScreen() {
           <SergeantAvatar sergeantId={pendingSergeantId} size={58} />
           <Card alt elevation={1} style={{ flex: 1, padding: 12 }}>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, lineHeight: 20 }}>
-              "¿A qué hora te reportas? Te mando el check-in sin falta, recluta."
+              {t('onboarding.scheduleBubble')}
             </Text>
           </Card>
         </View>
 
         <Text style={{ fontFamily: FONTS.display, fontSize: 28, color: DARK.text, letterSpacing: 1, marginBottom: 4 }}>
-          HORA DEL CHECK-IN
+          {t('onboarding.scheduleTitle')}
         </Text>
         <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: DARK.textDim, marginBottom: 20 }}>
-          Recibirás una notificación diaria a esta hora para reportar tus metas.
+          {t('onboarding.scheduleHelp')}
         </Text>
 
         <View style={{ gap: 10, marginBottom: 28 }}>
@@ -81,7 +82,7 @@ export default function OnboardingScheduleScreen() {
                   <Text style={{ fontSize: 26 }}>{opt.emoji}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 0.8 }}>{opt.label}</Text>
-                    <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim }}>{opt.note}</Text>
+                    <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim }}>{t(`onboarding.hourNotes.${opt.note}`)}</Text>
                   </View>
                   {isSelected ? (
                     <View
@@ -103,9 +104,9 @@ export default function OnboardingScheduleScreen() {
           })}
         </View>
 
-        <ComicButton label="SIGUIENTE → CREAR CUENTA" color={accent} textColor="#0B0E13" fullWidth size="lg" onPress={handleNext} />
+        <ComicButton label={t('onboarding.nextAccount')} color={accent} textColor="#0B0E13" fullWidth size="lg" onPress={handleNext} />
         <Pressable onPress={() => router.back()} style={{ alignItems: 'center', paddingVertical: 12 }}>
-          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textMuted }}>← Atrás</Text>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textMuted }}>{`← ${t('common.back')}`}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

@@ -10,6 +10,7 @@
  * la doc actual de Gemini si alguna no convence:
  * https://ai.google.dev/gemini-api/docs/speech-generation
  */
+import { appLocale } from '../i18n';
 
 export type SergeantId = 'gomez' | 'rex' | 'valentina' | 'fabianski';
 
@@ -31,6 +32,8 @@ export interface Character {
   emoji: string;
   /** una línea para las cards de selección */
   tagline: string;
+  /** tagline en inglés */
+  taglineEn: string;
   /** frase de muestra que se reproduce con el botón "🔊 Escuchar" en onboarding */
   sampleLine: string;
   /** misma frase de muestra en inglés (para usuarios con el dispositivo en inglés) */
@@ -65,6 +68,7 @@ export const CHARACTERS: Record<SergeantId, Character> = {
     flag: '🇲🇽',
     emoji: '🎖️',
     tagline: 'Viejo escuela. Duro pero justo. Te habla con honor.',
+    taglineEn: 'Old school. Tough but fair. Speaks to you with honor.',
     sampleLine:
       'A ver, recluta. El que madruga, Dios lo ayuda. Hoy te me levantas y cumples, ¿me oíste? Por tu familia y por tu palabra.',
     sampleLineEn:
@@ -92,6 +96,7 @@ NUNCA gritas en exceso ni eres payaso: tu fuerza es la gravedad y la autoridad t
     flag: '🇺🇸',
     emoji: '🐶',
     tagline: 'Marine gritón. Spanglish. Y cuando fallas... LADRA.',
+    taglineEn: 'Loud Marine. And when you fail... he BARKS.',
     sampleLine:
       "MOVE IT, soldado! ¿Qué es esto?! ¡Hoy NO hay excusas! El fracaso NO es una opción, ¿me copias? *WOOF WOOF!*",
     sampleLineEn:
@@ -119,6 +124,7 @@ USA MAYÚSCULAS para las palabras que gritas. Energía al 200%.
     flag: '💅',
     emoji: '💋',
     tagline: 'Élite, glamurosa, letal. No grita: te decepciona con clase.',
+    taglineEn: 'Elite, glamorous, lethal. She doesn\'t yell: she disappoints you with class.',
     sampleLine:
       '¿Eso fue tu mejor esfuerzo, corazón? Qué… tierno. Inténtalo de nuevo, pero esta vez en serio, mijito.',
     sampleLineEn:
@@ -145,6 +151,7 @@ ESTILO: Usas diminutivos condescendientes como ARMAS ("mijito", "corazón", "tes
     flag: '🌈',
     emoji: '🎭',
     tagline: 'Disciplina real + drama de telenovela. Cálido pero implacable.',
+    taglineEn: 'Real discipline + soap-opera drama. Warm but relentless.',
     sampleLine:
       'Mija, me ROMPISTE el corazón con esa excusa. *suspiro dramático* Ahora dame 20 lagartijas y reflexiona sobre lo que hiciste.',
     sampleLineEn:
@@ -178,4 +185,9 @@ export const DEFAULT_SERGEANT: SergeantId = 'gomez';
 export function getCharacter(id: string | null | undefined): Character {
   if (id && id in CHARACTERS) return CHARACTERS[id as SergeantId];
   return CHARACTERS[DEFAULT_SERGEANT];
+}
+
+/** Tagline del personaje en el idioma activo. */
+export function charTagline(c: Character): string {
+  return appLocale() === 'en' ? c.taglineEn : c.tagline;
 }

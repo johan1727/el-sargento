@@ -20,6 +20,7 @@ import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { Card } from '../../src/components/Card';
 import { useDialog } from '../../src/components/Dialog';
 import { GoalSuggestions } from '../../src/components/GoalSuggestions';
+import { t } from '../../src/i18n';
 import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
 export let pendingGoals: { title: string; type: 'habit' | 'project' }[] = [];
@@ -63,10 +64,10 @@ export default function OnboardingGoalsScreen() {
     if (!filled.length) {
       show({
         icon: character.emoji,
-        title: '¡Recluta!',
-        message: `${character.name} dice: Necesitas al menos UNA meta. ¿Para qué estás aquí?`,
+        title: t('onboarding.recruitTitle'),
+        message: t('onboarding.needOneGoal', { name: character.name }),
         accent,
-        buttons: [{ text: 'Entendido' }],
+        buttons: [{ text: t('common.understood') }],
       });
       return;
     }
@@ -82,16 +83,16 @@ export default function OnboardingGoalsScreen() {
           <SergeantAvatar sergeantId={pendingSergeantId} size={58} />
           <Card alt elevation={1} style={{ flex: 1, padding: 12 }}>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, lineHeight: 20 }}>
-              "Muy bien, recluta. Dime tus objetivos. ¿Qué vamos a conquistar?"
+              {t('onboarding.goalsBubble')}
             </Text>
           </Card>
         </View>
 
         <Text style={{ fontFamily: FONTS.display, fontSize: 28, color: DARK.text, letterSpacing: 1, marginBottom: 4 }}>
-          TUS METAS (máx. 5)
+          {t('onboarding.goalsTitle')}
         </Text>
         <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: DARK.textDim, marginBottom: 18 }}>
-          Hábitos o proyectos que quieres cumplir cada día.
+          {t('onboarding.goalsHelp')}
         </Text>
 
         {goals.map((goal, idx) => (
@@ -112,7 +113,7 @@ export default function OnboardingGoalsScreen() {
               ref={(r) => { inputRefs.current[idx] = r; }}
               value={goal}
               onChangeText={(t) => updateGoal(idx, t)}
-              placeholder={idx === 0 ? 'ej. Ejercicio 30 min' : 'ej. Leer 20 páginas'}
+              placeholder={idx === 0 ? t('onboarding.goalPlaceholder0') : t('onboarding.goalPlaceholder1')}
               placeholderTextColor={DARK.textMuted}
               returnKeyType={idx < 4 ? 'next' : 'done'}
               maxLength={MAX_GOAL_LEN}
@@ -147,7 +148,7 @@ export default function OnboardingGoalsScreen() {
             <View style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: accent, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontSize: 20, color: accent, lineHeight: 24 }}>+</Text>
             </View>
-            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: accent }}>Agregar otra meta</Text>
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: accent }}>{t('onboarding.addGoal')}</Text>
           </Pressable>
         ) : null}
 
@@ -156,9 +157,9 @@ export default function OnboardingGoalsScreen() {
         </View>
 
         <View style={{ marginTop: 12, gap: 12 }}>
-          <ComicButton label="SIGUIENTE → HORARIO" color={accent} textColor="#0B0E13" fullWidth size="lg" onPress={handleNext} />
+          <ComicButton label={t('onboarding.nextSchedule')} color={accent} textColor="#0B0E13" fullWidth size="lg" onPress={handleNext} />
           <Pressable onPress={() => router.back()} style={{ alignItems: 'center', paddingVertical: 8 }}>
-            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textMuted }}>← Cambiar sargento</Text>
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textMuted }}>{t('onboarding.changeSergeant')}</Text>
           </Pressable>
         </View>
       </ScrollView>

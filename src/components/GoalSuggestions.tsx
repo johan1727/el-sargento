@@ -1,6 +1,7 @@
 /** Chips de metas sugeridas — tap para agregar rápido. */
 import { Pressable, Text, View } from 'react-native';
-import { GOAL_SUGGESTIONS, suggestionText } from '../constants/goalSuggestions';
+import { GOAL_SUGGESTIONS, suggestionText, suggestionLabel } from '../constants/goalSuggestions';
+import { t } from '../i18n';
 import { DARK, FONTS, RADIUS, tint } from '../constants/theme';
 
 export function GoalSuggestions({
@@ -16,7 +17,7 @@ export function GoalSuggestions({
   return (
     <View>
       <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim, marginBottom: 10 }}>
-        💡 Ideas rápidas (toca para agregar)
+        {t('onboarding.quickIdeas')}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {GOAL_SUGGESTIONS.map((s) => {
@@ -45,7 +46,7 @@ export function GoalSuggestions({
             >
               <Text style={{ fontSize: 14 }}>{s.emoji}</Text>
               <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: isUsed ? DARK.textMuted : DARK.text }}>
-                {s.label}
+                {suggestionLabel(s)}
               </Text>
             </Pressable>
           );

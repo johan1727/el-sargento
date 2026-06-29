@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CHARACTER_LIST, type SergeantId } from '../../src/constants/characters';
+import { CHARACTER_LIST, charTagline, type SergeantId } from '../../src/constants/characters';
+import { t } from '../../src/i18n';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { ComicButton } from '../../src/components/ComicButton';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../../src/constants/theme';
@@ -57,7 +58,7 @@ export default function OnboardingSelectScreen() {
               EL SARGENTO
             </Text>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: DARK.textDim, marginTop: 4 }}>
-              Coach militar de productividad
+              {t('onboarding.subtitle')}
             </Text>
           </View>
           <View
@@ -71,12 +72,12 @@ export default function OnboardingSelectScreen() {
               marginTop: 4,
             }}
           >
-            <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: DARK.textDim, letterSpacing: 1 }}>1 / 4</Text>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: DARK.textDim, letterSpacing: 1 }}>{t('onboarding.step', { n: 1 })}</Text>
           </View>
         </View>
 
         <Text style={{ fontFamily: FONTS.display, fontSize: 28, color: DARK.text, letterSpacing: 1, marginBottom: 16 }}>
-          ELIGE TU SARGENTO:
+          {t('onboarding.chooseTitle')}
         </Text>
 
         {CHARACTER_LIST.map((c) => {
@@ -105,7 +106,7 @@ export default function OnboardingSelectScreen() {
                     <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 0.8 }}>{c.name}</Text>
                     <Text style={{ fontSize: 18 }}>{c.flag}</Text>
                   </View>
-                  <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, lineHeight: 18 }}>{c.tagline}</Text>
+                  <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, lineHeight: 18 }}>{charTagline(c)}</Text>
                   <Pressable
                     onPress={() => handleListen(c.id)}
                     style={{
@@ -128,7 +129,7 @@ export default function OnboardingSelectScreen() {
                       <Text style={{ fontSize: 14 }}>🔊</Text>
                     )}
                     <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: playing === c.id ? accent : DARK.textDim }}>
-                      Escuchar
+                      {t('onboarding.listen')}
                     </Text>
                   </Pressable>
                 </View>
@@ -157,7 +158,7 @@ export default function OnboardingSelectScreen() {
 
         <View style={{ marginTop: 10 }}>
           <ComicButton
-            label={`¡A ENTRENAR CON ${selectedChar?.name.toUpperCase()}!`}
+            label={t('onboarding.trainWith', { name: selectedChar?.name.toUpperCase() ?? '' })}
             color={selectedChar?.theme.accent ?? '#FFFFFF'}
             textColor="#0B0E13"
             size="lg"
