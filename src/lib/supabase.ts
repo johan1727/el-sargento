@@ -19,8 +19,13 @@ export const supabase = createClient(
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      // En web no hay deep-link de OAuth; en native tampoco lo usamos (email).
-      detectSessionInUrl: false,
+      // En web Supabase procesa el `?code=` al recargar; en native lo cerramos a
+      // mano (WebBrowser → exchangeCodeForSession) en store/session.tsx.
+      detectSessionInUrl: Platform.OS === 'web',
+      // PKCE: el redirect de OAuth devuelve `?code=` (query param), que es lo que
+      // intercambia signInWithGoogle. Sin esto, el flujo implicit pone los tokens
+      // en el fragmento `#` y no los podríamos leer en React Native.
+      flowType: 'pkce',
     },
   },
 );
