@@ -43,6 +43,7 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { WeekStrip } from '../../src/components/WeekStrip';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { Skeleton } from '../../src/components/Skeleton';
+import { t } from '../../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, greetingForHour, tint } from '../../src/constants/theme';
 
 export default function HomeScreen() {
@@ -207,16 +208,16 @@ export default function HomeScreen() {
       >
         {/* Nudge de invitado → incitar al login */}
         {isGuest ? (
-          <Pressable onPress={() => router.push('/settings')} accessibilityRole="button" accessibilityLabel="Crear tu cuenta">
+          <Pressable onPress={() => router.push('/settings')} accessibilityRole="button" accessibilityLabel={t('guest.createMyAccount')}>
             <Card accentColor={accent} tintOpacity={0.14} elevation={1} style={{ marginHorizontal: 16, marginTop: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: tint(accent, 0.5) }}>
               <Text style={{ fontSize: 26 }}>👀</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: FONTS.bodyBlack, fontSize: 14, color: DARK.text }}>Estás de invitado</Text>
+                <Text style={{ fontFamily: FONTS.bodyBlack, fontSize: 14, color: DARK.text }}>{t('guest.bannerTitle')}</Text>
                 <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textDim, lineHeight: 17 }}>
-                  Crea tu cuenta para chat con IA, voz y guardar tu progreso.
+                  {t('guest.bannerBody')}
                 </Text>
               </View>
-              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: accent }}>Crear →</Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 13, color: accent }}>{t('guest.create')}</Text>
             </Card>
           </Pressable>
         ) : null}

@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useSession } from '../src/store/session';
-import { CHARACTER_LIST, getCharacter, type SergeantId } from '../src/constants/characters';
+import { CHARACTER_LIST, getCharacter, charTagline, type SergeantId } from '../src/constants/characters';
 import { hasFullAccess, isTrialActive, trialDaysLeft } from '../src/lib/streak';
 import { updateProfile, deleteAccountData } from '../src/lib/db';
 import { supabase } from '../src/lib/supabase';
@@ -16,6 +16,7 @@ import { SergeantAvatar } from '../src/components/SergeantAvatar';
 import { Card } from '../src/components/Card';
 import { ComicButton } from '../src/components/ComicButton';
 import { useDialog } from '../src/components/Dialog';
+import { t } from '../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../src/constants/theme';
 
 const HOURS = [6, 7, 8, 9, 12, 18, 20, 21];
@@ -39,24 +40,22 @@ export default function SettingsScreen() {
 
   const handleUpgrade = async () => {
     if (!upEmail.trim() || upPass.length < 6) {
-      show({ icon: '✉️', title: 'Faltan datos', message: 'Escribe tu correo y una contraseña de al menos 6 caracteres.', accent });
+      show({ icon: '✉️', title: t('settings.missingData'), message: t('settings.missingDataMsg'), accent });
       return;
     }
     setUpgrading(true);
     const r = await upgradeAccount(upEmail.trim(), upPass);
     setUpgrading(false);
     if (r.error) {
-      show({ icon: '⚠️', title: 'No se pudo', message: r.error, accent });
+      show({ icon: '⚠️', title: t('settings.couldNot'), message: r.error, accent });
       return;
     }
     setUpEmail('');
     setUpPass('');
     show({
       icon: '🎉',
-      title: '¡Cuenta creada!',
-      message: r.needsConfirmation
-        ? 'Revisa tu correo para confirmarlo. Tu progreso quedó guardado.'
-        : 'Tu progreso quedó guardado en tu cuenta.',
+      title: t('settings.accountCreated'),
+      message: r.needsConfirmation ? t('settings.accountCreatedConfirm') : t('settings.accountCreatedOk'),
       accent,
     });
   };
@@ -74,7 +73,7 @@ export default function SettingsScreen() {
     const updated = await updateProfile(user.id, { display_name: name.trim().slice(0, 40) || null });
     patchProfile(updated);
     setSavingName(false);
-    show({ icon: '✅', title: 'Listo', message: 'Nombre actualizado.', accent });
+    show({ icon: '✅', title: t('settings.done'), message: t('settings.nameUpdated'), accent });
   };
 
   const handleChangeSergeant = async (id: SergeantId) => {
@@ -105,11 +104,11 @@ export default function SettingsScreen() {
     if (isGuest) {
       show({
         icon: '⚠️',
-        title: 'Eres invitado',
-        message: 'Si cierras sesión perderás tu progreso. Crea tu cuenta arriba para conservarlo.',
+        title: t('settings.guestSignoutTitle'),
+        message: t('settings.guestSignoutMsg'),
         buttons: [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Salir igual', style: 'destructive', onPress: doSignOut },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('settings.leaveAnyway'), style: 'destructive', onPress: doSignOut },
         ],
       });
       return;
@@ -120,12 +119,12 @@ export default function SettingsScreen() {
   const handleDelete = () => {
     show({
       icon: '⚠️',
-      title: 'Borrar cuenta',
-      message: 'Se eliminarán tus metas, racha, historial de chat y perfil. Esta acción no se puede deshacer.',
+      title: t('settings.deleteTitle'),
+      message: t('settings.deleteMsg'),
       buttons: [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Borrar todo',
+          text: t('settings.deleteConfirm'),
           style: 'destructive',
           onPress: async () => {
             if (!user) return;
@@ -150,10 +149,10 @@ export default function SettingsScreen() {
   };
 
   const premiumLabel = profile?.is_premium
-    ? '✅ Premium activo'
+    ? t('settings.premiumActive')
     : profile && isTrialActive(profile)
-    ? `🎁 Trial — ${trialDaysLeft(profile)} día(s) restantes`
-    : '🔒 Sin acceso premium';
+    ? t('settings.trialLeft', { n: trialDaysLeft(profile) })
+    : t('settings.noPremium');
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
@@ -170,7 +169,7 @@ export default function SettingsScreen() {
           backgroundColor: DARK.bgElevated,
         }}
       >
-        <Text style={{ fontFamily: FONTS.display, fontSize: 28, color: DARK.text, letterSpacing: 1 }}>AJUSTES</Text>
+        <Text style={{ fontFamily: FONTS.display, fontSize: 28, color: DARK.text, letterSpacing: 1 }}>{t('settings.title')}</Text>
         <Pressable onPress={close} hitSlop={10} style={{ padding: 6 }}>
           <Text style={{ fontSize: 22, color: DARK.textDim }}>✕</Text>
         </Pressable>
@@ -181,15 +180,15 @@ export default function SettingsScreen() {
         {isGuest ? (
           <Card accentColor={accent} tintOpacity={0.1} elevation={1} style={{ padding: 16, borderColor: tint(accent, 0.4) }}>
             <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 0.8, marginBottom: 4 }}>
-              👀 ESTÁS DE INVITADO
+              {t('settings.guestTitle')}
             </Text>
             <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, lineHeight: 19, marginBottom: 12 }}>
-              Crea tu cuenta para no perder tu racha ni tus metas, y poder entrar desde otro dispositivo.
+              {t('settings.guestBody')}
             </Text>
             <TextInput
               value={upEmail}
               onChangeText={setUpEmail}
-              placeholder="tú@correo.com"
+              placeholder={t('settings.emailPlaceholder')}
               placeholderTextColor={DARK.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -209,7 +208,7 @@ export default function SettingsScreen() {
             <TextInput
               value={upPass}
               onChangeText={setUpPass}
-              placeholder="Contraseña (mín. 6)"
+              placeholder={t('settings.passPlaceholder')}
               placeholderTextColor={DARK.textMuted}
               secureTextEntry
               style={{
@@ -226,7 +225,7 @@ export default function SettingsScreen() {
               }}
             />
             <ComicButton
-              label={upgrading ? 'CREANDO...' : 'CREAR MI CUENTA'}
+              label={upgrading ? t('settings.creating') : t('settings.createAccount')}
               color={accent}
               textColor="#0B0E13"
               fullWidth
@@ -241,7 +240,7 @@ export default function SettingsScreen() {
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text }}>{premiumLabel}</Text>
           {profile && !hasFullAccess(profile) ? (
             <Pressable onPress={() => router.push('/paywall')}>
-              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: accent }}>Activar →</Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: accent }}>{t('settings.activate')}</Text>
             </Pressable>
           ) : null}
         </Card>
@@ -249,13 +248,13 @@ export default function SettingsScreen() {
         {/* Nombre */}
         <View>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.2, marginBottom: 8 }}>
-            TU NOMBRE
+            {t('settings.yourName')}
           </Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Recluta"
+              placeholder={t('signup.namePlaceholder')}
               placeholderTextColor={DARK.textMuted}
               autoCapitalize="words"
               maxLength={40}
@@ -273,7 +272,7 @@ export default function SettingsScreen() {
               }}
             />
             <ComicButton
-              label={savingName ? '...' : 'GUARDAR'}
+              label={savingName ? t('common.saving') : t('common.save')}
               color={accent}
               textColor="#0B0E13"
               size="sm"
@@ -286,7 +285,7 @@ export default function SettingsScreen() {
         {/* Sargento */}
         <View>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.2, marginBottom: 8 }}>
-            TU SARGENTO
+            {t('settings.yourSergeant')}
           </Text>
           <View style={{ gap: 10 }}>
             {CHARACTER_LIST.map((c) => {
@@ -315,7 +314,7 @@ export default function SettingsScreen() {
                         {c.name} {c.flag}
                       </Text>
                       <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textDim }} numberOfLines={1}>
-                        {c.tagline}
+                        {charTagline(c)}
                       </Text>
                     </View>
                     {selected ? <Text style={{ fontSize: 16, color: a }}>✓</Text> : null}
@@ -329,7 +328,7 @@ export default function SettingsScreen() {
         {/* Hora de check-in */}
         <View>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.2, marginBottom: 8 }}>
-            HORA DEL CHECK-IN
+            {t('settings.checkinHour')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {HOURS.map((h) => {
@@ -359,21 +358,21 @@ export default function SettingsScreen() {
         {/* Legal */}
         <View>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.2, marginBottom: 8 }}>
-            LEGAL
+            {t('settings.legal')}
           </Text>
           <View style={{ gap: 1, borderRadius: RADIUS.md, overflow: 'hidden', borderWidth: 1, borderColor: DARK.hairline }}>
             <Pressable
               onPress={() => router.push('/legal/privacy')}
               style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 14, backgroundColor: DARK.surface }}
             >
-              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text }}>Política de privacidad</Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text }}>{t('settings.privacyPolicy')}</Text>
               <Text style={{ color: DARK.textMuted }}>›</Text>
             </Pressable>
             <Pressable
               onPress={() => router.push('/legal/terms')}
               style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 14, backgroundColor: DARK.surface }}
             >
-              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text }}>Términos de servicio</Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text }}>{t('settings.termsOfService')}</Text>
               <Text style={{ color: DARK.textMuted }}>›</Text>
             </Pressable>
           </View>
@@ -381,9 +380,9 @@ export default function SettingsScreen() {
 
         {/* Cuenta */}
         <View style={{ marginTop: 8, gap: 10 }}>
-          <ComicButton label="CERRAR SESIÓN" variant="ghost" color={DARK.textDim} fullWidth onPress={handleSignOut} />
+          <ComicButton label={t('settings.signOut')} variant="ghost" color={DARK.textDim} fullWidth onPress={handleSignOut} />
           <Pressable onPress={handleDelete} disabled={busy} style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: '#FF5A65' }}>Borrar mi cuenta</Text>
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: '#FF5A65' }}>{t('settings.deleteAccount')}</Text>
           </Pressable>
         </View>
       </ScrollView>

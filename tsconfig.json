@@ -5,7 +5,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "skipLibCheck": true,
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"]
   },
   "include": [
     "**/*.ts",
@@ -16,6 +23,9 @@
   ],
   "exclude": [
     "node_modules",
-    "supabase/functions"
+    "supabase/functions",
+    ".expo",
+    "dist",
+    "build"
   ]
 }

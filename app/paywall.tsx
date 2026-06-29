@@ -21,17 +21,18 @@ import { ComicButton } from '../src/components/ComicButton';
 import { SergeantHeader } from '../src/components/SergeantHeader';
 import { Card } from '../src/components/Card';
 import { useDialog } from '../src/components/Dialog';
+import { t } from '../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../src/constants/theme';
 
 const PRICE_MXN = '$149 MXN / mes';
 
 const FEATURES = [
-  { emoji: '🔊', label: 'Voz real de los sargentos (Gemini TTS)' },
-  { emoji: '💬', label: 'Mensajes ilimitados' },
-  { emoji: '🎤', label: 'Conversación por voz' },
-  { emoji: '👥', label: 'Los 4 sargentos desbloqueados' },
-  { emoji: '🔥', label: 'Seguimiento de racha y rangos' },
-  { emoji: '🔔', label: 'Notificaciones de check-in diario' },
+  { emoji: '🔊', key: 'voice' },
+  { emoji: '💬', key: 'unlimited' },
+  { emoji: '🎤', key: 'voiceChat' },
+  { emoji: '👥', key: 'allFour' },
+  { emoji: '🔥', key: 'streak' },
+  { emoji: '🔔', key: 'notifications' },
 ];
 
 export default function PaywallScreen() {
@@ -49,12 +50,12 @@ export default function PaywallScreen() {
     // TODO: reemplazar con RevenueCat (Purchases.purchasePackage).
     show({
       icon: '🚧',
-      title: 'RevenueCat pendiente',
-      message: 'Integra react-native-purchases y configura el producto en App Store / Google Play. Ver comentarios en app/paywall.tsx.',
+      title: t('paywall.devTitle'),
+      message: t('paywall.devMsg'),
       accent,
       buttons: [
         {
-          text: 'Simular compra (dev)',
+          text: t('paywall.devSimulate'),
           onPress: async () => {
             try {
               await devGrantPremium(user.id);
@@ -65,15 +66,15 @@ export default function PaywallScreen() {
               // (correcto). Para probar premium en dev, actívalo desde el dashboard.
               show({
                 icon: '🛡️',
-                title: 'Premium protegido',
-                message: 'is_premium solo se activa server-side (webhook de RevenueCat o dashboard). El trigger de seguridad está funcionando.',
+                title: t('paywall.protectedTitle'),
+                message: t('paywall.protectedMsg'),
                 accent,
               });
             }
             setLoading(false);
           },
         },
-        { text: 'Cancelar', style: 'cancel', onPress: () => setLoading(false) },
+        { text: t('common.cancel'), style: 'cancel', onPress: () => setLoading(false) },
       ],
     });
   };
@@ -84,13 +85,7 @@ export default function PaywallScreen() {
     router.replace('/onboarding');
   };
 
-  const paywallLine: Record<string, string> = {
-    gomez: '¿Te vas a rendir por $149 pesos, recluta? Tu palabra vale más que eso. Activa y cumple.',
-    rex: '¡NOOOO! ¡¿SOLDIER?! ¡Ciento cuarenta y nueve pesos y te rajaste?! *WOOF!* ¡VUELVE AL CAMPO!',
-    valentina: '¿En serio te vas a ir? Qué… predecible. $149 pesos. Cuánta voluntad.',
-    fabianski: 'Mija, me ROMPES el corazón. ¿$149 pesitos y ya? *suspiro dramático* Vuelve. Te necesito.',
-  };
-  const line = paywallLine[character.id] ?? paywallLine.gomez;
+  const line = t(`paywall.lines.${character.id}`);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
@@ -100,7 +95,7 @@ export default function PaywallScreen() {
         {/* Quote del sargento */}
         <Card accentColor={accent} tintOpacity={0.1} elevation={2} style={{ padding: 18, marginBottom: 22, borderColor: tint(accent, 0.4) }}>
           <Text style={{ fontFamily: FONTS.display, fontSize: 30, color: accent, letterSpacing: 1.5, marginBottom: 8 }}>
-            TU TRIAL TERMINÓ
+            {t('paywall.trialEnded')}
           </Text>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, lineHeight: 22, fontStyle: 'italic' }}>
             {line}
@@ -109,14 +104,14 @@ export default function PaywallScreen() {
 
         {/* Features */}
         <Text style={{ fontFamily: FONTS.display, fontSize: 24, color: DARK.text, letterSpacing: 1, marginBottom: 12 }}>
-          CON PREMIUM TIENES:
+          {t('paywall.withPremium')}
         </Text>
         {FEATURES.map((f) => (
-          <Card key={f.label} elevation={1} style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden', marginBottom: 10 }}>
+          <Card key={f.key} elevation={1} style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden', marginBottom: 10 }}>
             <View style={{ width: 4, alignSelf: 'stretch', backgroundColor: accent }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, flex: 1 }}>
               <Text style={{ fontSize: 22 }}>{f.emoji}</Text>
-              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, flex: 1 }}>{f.label}</Text>
+              <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text, flex: 1 }}>{t(`paywall.features.${f.key}`)}</Text>
             </View>
           </Card>
         ))}
@@ -136,12 +131,12 @@ export default function PaywallScreen() {
         >
           <Text style={{ fontFamily: FONTS.display, fontSize: 42, color: '#0B0E13', letterSpacing: 1.5 }}>{PRICE_MXN}</Text>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: tint('#000000', 0.6), marginTop: 2 }}>
-            Cancela cuando quieras · Sin compromisos
+            {t('paywall.priceSub')}
           </Text>
         </View>
 
         <ComicButton
-          label={loading ? 'PROCESANDO...' : '¡ACTIVAR PREMIUM!'}
+          label={loading ? t('paywall.processing') : t('paywall.activateCta')}
           color={accent}
           textColor="#0B0E13"
           fullWidth
@@ -151,13 +146,11 @@ export default function PaywallScreen() {
         />
 
         <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: DARK.textMuted, textAlign: 'center', marginTop: 12, lineHeight: 16 }}>
-          {Platform.OS === 'ios'
-            ? 'La suscripción se renueva automáticamente. Gestiona en Configuración → Tu nombre → Suscripciones.'
-            : 'La suscripción se renueva automáticamente. Gestiona en Google Play → Suscripciones.'}
+          {Platform.OS === 'ios' ? t('paywall.manageIos') : t('paywall.manageAndroid')}
         </Text>
 
         <Pressable onPress={handleSignOut} style={{ alignItems: 'center', paddingVertical: 16 }}>
-          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textMuted }}>Cerrar sesión</Text>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textMuted }}>{t('paywall.signOut')}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

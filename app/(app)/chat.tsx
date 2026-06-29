@@ -42,6 +42,7 @@ import { SergeantHeader } from '../../src/components/SergeantHeader';
 import { Card } from '../../src/components/Card';
 import { ComicButton } from '../../src/components/ComicButton';
 import { useDialog } from '../../src/components/Dialog';
+import { t } from '../../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow } from '../../src/constants/theme';
 
 /** Tope de longitud del mensaje del usuario (evita payloads enormes). */
@@ -261,14 +262,13 @@ export default function ChatScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 8 }}>
           <Text style={{ fontSize: 56 }}>🔒</Text>
           <Text style={{ fontFamily: FONTS.display, fontSize: 30, color: DARK.text, letterSpacing: 1, textAlign: 'center' }}>
-            HABLA CON {character.name.toUpperCase()}
+            {t('guest.chatLockedTitle', { name: character.name.toUpperCase() })}
           </Text>
           <Text style={{ fontFamily: FONTS.body, fontSize: 15, color: DARK.textDim, textAlign: 'center', lineHeight: 22, marginBottom: 12 }}>
-            El chat con IA y la voz del sargento son para reclutas con cuenta. Crea la
-            tuya (gratis) y desbloquéalos al instante. Tu progreso se guarda.
+            {t('guest.chatLockedBody')}
           </Text>
           <ComicButton
-            label="CREAR MI CUENTA"
+            label={t('guest.createMyAccount')}
             color={accent}
             textColor="#0B0E13"
             size="lg"

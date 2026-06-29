@@ -36,3 +36,6 @@ yarn-error.*
 
 # Local cache
 .tamagui/
+
+# Claude Code settings (personal/local)
+.claude/settings.local.json
