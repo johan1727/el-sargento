@@ -29,7 +29,7 @@ import { DARK, FONTS, RADIUS, tint } from '../../src/constants/theme';
 
 export default function OnboardingSignupScreen() {
   const router = useRouter();
-  const { signUp, signIn, signInWithGoogle, resetPassword, patchProfile } = useSession();
+  const { signUp, signIn, signInWithGoogle, signInAsGuest, resetPassword, patchProfile } = useSession();
   const { show } = useDialog();
   const character = getCharacter(pendingSergeantId);
   const accent = character.theme.accent;
@@ -93,6 +93,22 @@ export default function OnboardingSignupScreen() {
     }
     if (r.error) {
       show({ icon: '⚠️', title: 'Google', message: r.error, accent });
+      setLoading(false);
+      return;
+    }
+    await finishOnboarding();
+  };
+
+  const handleGuest = async () => {
+    setLoading(true);
+    const r = await signInAsGuest();
+    if (r.error) {
+      show({
+        icon: '🚧',
+        title: 'Modo invitado no disponible',
+        message: 'Activa "Anonymous sign-ins" en Supabase → Authentication para permitir probar sin cuenta.',
+        accent,
+      });
       setLoading(false);
       return;
     }
@@ -266,6 +282,22 @@ export default function OnboardingSignupScreen() {
           >
             <Text style={{ fontFamily: FONTS.bodyBlack, fontSize: 18, color: '#4285F4' }}>G</Text>
             <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: '#1F1F1F' }}>Continuar con Google</Text>
+          </Pressable>
+
+          {/* Probar sin cuenta (modo invitado) */}
+          <Pressable
+            onPress={handleGuest}
+            disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="Probar la app sin crear cuenta"
+            style={{ alignItems: 'center', paddingVertical: 14, marginTop: 4, opacity: loading ? 0.5 : 1 }}
+          >
+            <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: DARK.textDim }}>
+              👀 Probar sin cuenta
+            </Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: DARK.textMuted, marginTop: 2 }}>
+              Luego puedes crear tu cuenta y conservar tu progreso
+            </Text>
           </Pressable>
 
           <Pressable onPress={() => setMode(mode === 'signup' ? 'login' : 'signup')} style={{ alignItems: 'center', paddingVertical: 16 }}>

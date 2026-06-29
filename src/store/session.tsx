@@ -37,6 +37,12 @@ interface SessionState {
   signUp: (email: string, password: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string; cancelled?: boolean }>;
+  /** Entra como invitado (auth anónima de Supabase) para probar la app. */
+  signInAsGuest: () => Promise<{ error?: string }>;
+  /** Convierte la cuenta invitada en permanente (email+password), sin perder datos. */
+  upgradeAccount: (email: string, password: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
+  /** true si la sesión es de un invitado anónimo. */
+  isGuest: boolean;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
@@ -153,6 +159,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signInAsGuest = useCallback(async () => {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) return { error: error.message };
+    return {};
+  }, []);
+
+  const upgradeAccount = useCallback(async (email: string, password: string) => {
+    // updateUser sobre un usuario anónimo lo convierte en permanente, conservando
+    // sus datos (mismo user_id). Si email-confirmation está ON, el correo queda
+    // pendiente de confirmar pero la contraseña ya queda fijada.
+    const { data, error } = await supabase.auth.updateUser({ email, password });
+    if (error) return { error: error.message };
+    return { needsConfirmation: !data.user?.email_confirmed_at };
+  }, []);
+
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) return { error: error.message };
@@ -176,10 +197,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signUp,
       signIn,
       signInWithGoogle,
+      signInAsGuest,
+      upgradeAccount,
+      isGuest: session?.user?.is_anonymous ?? false,
       resetPassword,
       signOut,
     }),
-    [loading, session, profile, refreshProfile, patchProfile, signUp, signIn, signInWithGoogle, resetPassword, signOut],
+    [loading, session, profile, refreshProfile, patchProfile, signUp, signIn, signInWithGoogle, signInAsGuest, upgradeAccount, resetPassword, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

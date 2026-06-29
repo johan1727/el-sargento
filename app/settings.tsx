@@ -23,7 +23,7 @@ const fmtHour = (h: number) => (h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : 
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, profile, patchProfile, signOut } = useSession();
+  const { user, profile, patchProfile, signOut, isGuest, upgradeAccount } = useSession();
   const { show } = useDialog();
   const character = getCharacter(profile?.chosen_sergeant);
   const accent = character.theme.accent;
@@ -31,6 +31,35 @@ export default function SettingsScreen() {
   const [name, setName] = useState(profile?.display_name ?? '');
   const [savingName, setSavingName] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Upgrade de cuenta invitada → permanente.
+  const [upEmail, setUpEmail] = useState('');
+  const [upPass, setUpPass] = useState('');
+  const [upgrading, setUpgrading] = useState(false);
+
+  const handleUpgrade = async () => {
+    if (!upEmail.trim() || upPass.length < 6) {
+      show({ icon: '✉️', title: 'Faltan datos', message: 'Escribe tu correo y una contraseña de al menos 6 caracteres.', accent });
+      return;
+    }
+    setUpgrading(true);
+    const r = await upgradeAccount(upEmail.trim(), upPass);
+    setUpgrading(false);
+    if (r.error) {
+      show({ icon: '⚠️', title: 'No se pudo', message: r.error, accent });
+      return;
+    }
+    setUpEmail('');
+    setUpPass('');
+    show({
+      icon: '🎉',
+      title: '¡Cuenta creada!',
+      message: r.needsConfirmation
+        ? 'Revisa tu correo para confirmarlo. Tu progreso quedó guardado.'
+        : 'Tu progreso quedó guardado en tu cuenta.',
+      accent,
+    });
+  };
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/(app)'));
 
@@ -66,9 +95,26 @@ export default function SettingsScreen() {
     setBusy(false);
   };
 
-  const handleSignOut = async () => {
+  const doSignOut = async () => {
     await signOut();
     router.replace('/onboarding');
+  };
+
+  const handleSignOut = () => {
+    // Un invitado pierde su progreso al salir (la sesión anónima no se recupera).
+    if (isGuest) {
+      show({
+        icon: '⚠️',
+        title: 'Eres invitado',
+        message: 'Si cierras sesión perderás tu progreso. Crea tu cuenta arriba para conservarlo.',
+        buttons: [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Salir igual', style: 'destructive', onPress: doSignOut },
+        ],
+      });
+      return;
+    }
+    doSignOut();
   };
 
   const handleDelete = () => {
@@ -131,6 +177,65 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }} showsVerticalScrollIndicator={false}>
+        {/* Upgrade de invitado */}
+        {isGuest ? (
+          <Card accentColor={accent} tintOpacity={0.1} elevation={1} style={{ padding: 16, borderColor: tint(accent, 0.4) }}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 22, color: DARK.text, letterSpacing: 0.8, marginBottom: 4 }}>
+              👀 ESTÁS DE INVITADO
+            </Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: DARK.textDim, lineHeight: 19, marginBottom: 12 }}>
+              Crea tu cuenta para no perder tu racha ni tus metas, y poder entrar desde otro dispositivo.
+            </Text>
+            <TextInput
+              value={upEmail}
+              onChangeText={setUpEmail}
+              placeholder="tú@correo.com"
+              placeholderTextColor={DARK.textMuted}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              style={{
+                backgroundColor: DARK.surfaceAlt,
+                borderWidth: 1,
+                borderColor: DARK.hairline,
+                borderRadius: RADIUS.md,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                fontFamily: FONTS.bodyBold,
+                fontSize: 15,
+                color: DARK.text,
+                marginBottom: 8,
+              }}
+            />
+            <TextInput
+              value={upPass}
+              onChangeText={setUpPass}
+              placeholder="Contraseña (mín. 6)"
+              placeholderTextColor={DARK.textMuted}
+              secureTextEntry
+              style={{
+                backgroundColor: DARK.surfaceAlt,
+                borderWidth: 1,
+                borderColor: DARK.hairline,
+                borderRadius: RADIUS.md,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                fontFamily: FONTS.bodyBold,
+                fontSize: 15,
+                color: DARK.text,
+                marginBottom: 12,
+              }}
+            />
+            <ComicButton
+              label={upgrading ? 'CREANDO...' : 'CREAR MI CUENTA'}
+              color={accent}
+              textColor="#0B0E13"
+              fullWidth
+              disabled={upgrading}
+              onPress={handleUpgrade}
+            />
+          </Card>
+        ) : null}
+
         {/* Estado premium */}
         <Card accentColor={accent} tintOpacity={0.08} elevation={1} style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 15, color: DARK.text }}>{premiumLabel}</Text>

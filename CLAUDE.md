@@ -124,8 +124,13 @@ Defaults de `sg_profiles` (los pone el trigger `sg_handle_new_user`):
   `expo-web-browser`; botón en `app/onboarding/signup.tsx`). El signup detecta si
   email-confirmation está ON (`needsConfirmation`) y pide confirmar el correo en vez
   de fallar en silencio. Reset de contraseña en el login.
+- **Modo invitado** (`signInAsGuest` = auth anónima de Supabase). Botón "Probar sin
+  cuenta" en signup. El invitado obtiene user real + trial, así todo funciona igual.
+  En Ajustes puede convertir la cuenta a email+password (`upgradeAccount` = updateUser,
+  mismo user_id → migración automática sin perder datos). `isGuest` en el contexto.
 - **Config pendiente en dashboards (tú):**
   - Supabase → Auth → Providers → Google: ON, con los Client IDs de Google Cloud.
+  - Supabase → Auth → Sign In / Providers → **Anonymous sign-ins: ON** (para el modo invitado).
   - Supabase → Auth → URL Configuration → Redirect URLs: añade `elsargento://` (scheme
     nativo) y la URL web si aplica.
   - RevenueCat → Webhooks: URL `.../functions/v1/sg-revenuecat-webhook` + header
