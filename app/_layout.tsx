@@ -3,6 +3,7 @@
  */
 import '../global.css';
 import 'react-native-url-polyfill/auto';
+import '../src/i18n'; // fija el idioma según el dispositivo al arrancar
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';

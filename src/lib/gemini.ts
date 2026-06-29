@@ -12,6 +12,7 @@
  * para que la app siga siendo usable.
  */
 import * as FileSystem from 'expo-file-system';
+import { appLocale } from '../i18n';
 import { BASE_RULES, getCharacter, type SergeantId, type Character } from '../constants/characters';
 import { ENV, HAS_GEMINI, HAS_SUPABASE, GEMINI_VIA_EDGE } from './env';
 import { supabase } from './supabase';
@@ -88,9 +89,14 @@ export interface ReplyResult {
  */
 /** Arma el cuerpo de generateContent de Gemini (sin la API key). */
 function buildPayload(character: Character, history: ChatTurn[], userMessage: string, ctx: SergeantContext) {
+  // El sargento responde en el idioma del usuario, conservando su personalidad.
+  const langLine =
+    appLocale() === 'en'
+      ? 'CRITICAL: The user speaks ENGLISH. Reply ONLY in English, keeping your full personality, intensity and humor (translate your catchphrases naturally).'
+      : 'CRÍTICO: El usuario habla ESPAÑOL. Responde SOLO en español mexicano, en personaje.';
   return {
     systemInstruction: {
-      parts: [{ text: `${character.systemPrompt}\n\n${BASE_RULES}\n\n${buildContextBlock(ctx)}` }],
+      parts: [{ text: `${character.systemPrompt}\n\n${BASE_RULES}\n\n${langLine}\n\n${buildContextBlock(ctx)}` }],
     },
     contents: toGeminiContents(history.slice(-10), userMessage),
     generationConfig: { temperature: 1.0, topP: 0.95, maxOutputTokens: 200 },
@@ -197,7 +203,7 @@ export async function transcribeAudio(uri: string): Promise<string | null> {
 
 // ── Fallback en personaje (sin Gemini) ─────────────────────────
 // No es inteligente, pero mantiene el tono y la app usable offline / sin key.
-const FALLBACKS: Record<SergeantId, string[]> = {
+const FALLBACKS_ES: Record<SergeantId, string[]> = {
   gomez: [
     'Te escucho, recluta. Pero las palabras no cumplen metas: los actos sí. A trabajar.',
     'El que madruga, Dios lo ayuda. Deja de darle vueltas y cumple, recluta.',
@@ -220,17 +226,41 @@ const FALLBACKS: Record<SergeantId, string[]> = {
   ],
 };
 
+const FALLBACKS_EN: Record<SergeantId, string[]> = {
+  gomez: [
+    "I hear you, recruit. But words don't hit goals — actions do. Get to work.",
+    'The early bird gets the worm. Stop circling and deliver, recruit.',
+    'Good. Write it down and do it. Your word is worth more than any excuse.',
+  ],
+  rex: [
+    "Excuses, soldier?! *WOOF!* I DON'T want them! I want RESULTS! LET'S GO!",
+    'OORAH! I like that attitude, soldier! Now EXECUTE!',
+    "MOVE IT! Failure is NOT an option. Do you copy?! *WOOF!*",
+  ],
+  valentina: [
+    "That's it, sweetie? How… cute. Prove me wrong.",
+    'Oh, darling. Less talk, more action. I\'ll wait… though I doubt it.',
+    'You almost impress me. Almost. Now do it for real, treasure.',
+  ],
+  fabianski: [
+    'Sweetie, that message BROKE my heart. *dramatic sigh* Now: go deliver. NOW.',
+    'OH! How could you do this to me? Breathe, focus, and give me those goals.',
+    'Drama aside… I want you a winner. 20 mental push-ups and go.',
+  ],
+};
+
 export function fallbackReply(
   sergeantId: SergeantId,
   _userMessage: string,
   ctx: SergeantContext,
 ): string {
-  const pool = FALLBACKS[sergeantId] ?? FALLBACKS.gomez;
+  const en = appLocale() === 'en';
+  const pool = (en ? FALLBACKS_EN : FALLBACKS_ES)[sergeantId] ?? FALLBACKS_ES.gomez;
   const base = pool[Math.floor(Math.random() * pool.length)];
   // Pequeño toque de contexto si hay pendientes.
   const pending = ctx.goalsToday.filter((g) => !g.completed);
   if (pending.length) {
-    return `${base} Te falta: ${pending[0].title}.`;
+    return en ? `${base} You still owe: ${pending[0].title}.` : `${base} Te falta: ${pending[0].title}.`;
   }
   return base;
 }

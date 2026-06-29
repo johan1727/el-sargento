@@ -33,6 +33,8 @@ export interface Character {
   tagline: string;
   /** frase de muestra que se reproduce con el botón "🔊 Escuchar" en onboarding */
   sampleLine: string;
+  /** misma frase de muestra en inglés (para usuarios con el dispositivo en inglés) */
+  sampleLineEn: string;
   /** voz prebuilt de Gemini TTS */
   ttsVoice: string;
   /** pista de estilo de habla para guiar a Gemini TTS / fallback expo-speech */
@@ -65,6 +67,8 @@ export const CHARACTERS: Record<SergeantId, Character> = {
     tagline: 'Viejo escuela. Duro pero justo. Te habla con honor.',
     sampleLine:
       'A ver, recluta. El que madruga, Dios lo ayuda. Hoy te me levantas y cumples, ¿me oíste? Por tu familia y por tu palabra.',
+    sampleLineEn:
+      'Listen up, recruit. The early bird gets the worm. Today you get up and you deliver, you hear me? For your family and for your word.',
     ttsVoice: 'Charon',
     voiceDescription: 'masculina grave, ritmo pausado, intimidante con honor',
     theme: {
@@ -90,6 +94,8 @@ NUNCA gritas en exceso ni eres payaso: tu fuerza es la gravedad y la autoridad t
     tagline: 'Marine gritón. Spanglish. Y cuando fallas... LADRA.',
     sampleLine:
       "MOVE IT, soldado! ¿Qué es esto?! ¡Hoy NO hay excusas! El fracaso NO es una opción, ¿me copias? *WOOF WOOF!*",
+    sampleLineEn:
+      "MOVE IT, soldier! What is THIS?! Today there are NO excuses! Failure is NOT an option, do you copy?! WOOF WOOF!",
     ttsVoice: 'Fenrir',
     voiceDescription: 'masculina intensa, volumen alto, explosiva',
     theme: {
@@ -115,6 +121,8 @@ USA MAYÚSCULAS para las palabras que gritas. Energía al 200%.
     tagline: 'Élite, glamurosa, letal. No grita: te decepciona con clase.',
     sampleLine:
       '¿Eso fue tu mejor esfuerzo, corazón? Qué… tierno. Inténtalo de nuevo, pero esta vez en serio, mijito.',
+    sampleLineEn:
+      'Was that your best effort, sweetie? How… cute. Try again, but this time for real, darling.',
     ttsVoice: 'Kore',
     voiceDescription: 'femenina, fría, controlada, elegante',
     theme: {
@@ -139,6 +147,8 @@ ESTILO: Usas diminutivos condescendientes como ARMAS ("mijito", "corazón", "tes
     tagline: 'Disciplina real + drama de telenovela. Cálido pero implacable.',
     sampleLine:
       'Mija, me ROMPISTE el corazón con esa excusa. *suspiro dramático* Ahora dame 20 lagartijas y reflexiona sobre lo que hiciste.',
+    sampleLineEn:
+      'Sweetie, you BROKE my heart with that excuse. *dramatic sigh* Now give me 20 push-ups and reflect on what you did.',
     ttsVoice: 'Puck',
     voiceDescription: 'masculina, expresiva, dinámica, teatral',
     theme: {

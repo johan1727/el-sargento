@@ -18,6 +18,7 @@ import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 
+import { appLocale } from '../i18n';
 import { getCharacter, type SergeantId } from '../constants/characters';
 import {
   base64ToBytes,
@@ -181,7 +182,7 @@ export function speakFallback(text: string, sergeantId: SergeantId) {
   // Limpiamos marcas tipo *WOOF* para que no se lean raras.
   const clean = text.replace(/\*/g, '');
   Speech.speak(clean, {
-    language: 'es-MX',
+    language: appLocale() === 'en' ? 'en-US' : 'es-MX',
     pitch: t.pitch,
     rate: t.rate,
   });
@@ -196,30 +197,37 @@ export async function speak(text: string, sergeantId: SergeantId): Promise<void>
 // ── Voces de muestra PRE-DESCARGADAS ───────────────────────────
 // Clips fijos del onboarding ("Escuchar"), generados una vez y empaquetados.
 // Reproducirlos NO gasta API (a diferencia de speak()). Ver assets/voices/.
-const SAMPLE_VOICES: Record<SergeantId, number> = {
+const SAMPLE_VOICES_ES: Record<SergeantId, number> = {
   gomez: require('../../assets/voices/gomez.wav'),
   rex: require('../../assets/voices/rex.wav'),
   valentina: require('../../assets/voices/valentina.wav'),
   fabianski: require('../../assets/voices/fabianski.wav'),
 };
+const SAMPLE_VOICES_EN: Record<SergeantId, number> = {
+  gomez: require('../../assets/voices/gomez_en.wav'),
+  rex: require('../../assets/voices/rex_en.wav'),
+  valentina: require('../../assets/voices/valentina_en.wav'),
+  fabianski: require('../../assets/voices/fabianski_en.wav'),
+};
 
 /**
- * Reproduce la muestra de voz del sargento desde el asset empaquetado (0 API).
- * En web cae a la voz on-device (expo-speech) porque expo-av no reproduce
- * nuestros WAV de forma fiable en navegador.
+ * Reproduce la muestra de voz del sargento desde el asset empaquetado (0 API),
+ * en el idioma del dispositivo. En web cae a la voz on-device (expo-speech).
  */
 export async function playSampleVoice(sergeantId: SergeantId): Promise<void> {
   await stopSpeech();
   const character = getCharacter(sergeantId);
+  const en = appLocale() === 'en';
 
   if (Platform.OS === 'web') {
-    speakFallback(character.sampleLine, sergeantId);
+    speakFallback(en ? character.sampleLineEn : character.sampleLine, sergeantId);
     return;
   }
 
   try {
     await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false });
-    const { sound } = await Audio.Sound.createAsync(SAMPLE_VOICES[sergeantId], { shouldPlay: true });
+    const asset = (en ? SAMPLE_VOICES_EN : SAMPLE_VOICES_ES)[sergeantId];
+    const { sound } = await Audio.Sound.createAsync(asset, { shouldPlay: true });
     currentSound = sound;
     sound.setOnPlaybackStatusUpdate((status) => {
       if (status.isLoaded && status.didJustFinish) {
@@ -229,6 +237,6 @@ export async function playSampleVoice(sergeantId: SergeantId): Promise<void> {
     });
   } catch (err) {
     if (__DEV__) console.warn('[tts] sample playback error', err);
-    speakFallback(character.sampleLine, sergeantId);
+    speakFallback(en ? character.sampleLineEn : character.sampleLine, sergeantId);
   }
 }
