@@ -16,7 +16,7 @@ import { SergeantAvatar } from '../src/components/SergeantAvatar';
 import { Card } from '../src/components/Card';
 import { ComicButton } from '../src/components/ComicButton';
 import { useDialog } from '../src/components/Dialog';
-import { t } from '../src/i18n';
+import { t, appLocale, setAppLocale, type AppLocale } from '../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../src/constants/theme';
 
 const HOURS = [6, 7, 8, 9, 12, 18, 20, 21];
@@ -347,6 +347,39 @@ export default function SettingsScreen() {
                   >
                     <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: selected ? accent : DARK.textDim }}>
                       {fmtHour(h)}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Idioma */}
+        <View>
+          <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 12, color: DARK.textDim, letterSpacing: 1.2, marginBottom: 8 }}>
+            {t('settings.language')}
+          </Text>
+          <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: DARK.textMuted, marginBottom: 8 }}>
+            {t('settings.languageAuto')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {(['es', 'en'] as AppLocale[]).map((l) => {
+              const selected = appLocale() === l;
+              return (
+                <Pressable key={l} onPress={() => setAppLocale(l)} style={{ flex: 1 }}>
+                  <View
+                    style={{
+                      paddingVertical: 12,
+                      borderRadius: RADIUS.md,
+                      alignItems: 'center',
+                      backgroundColor: selected ? tint(accent, 0.16) : DARK.surface,
+                      borderWidth: 1,
+                      borderColor: selected ? accent : DARK.hairline,
+                    }}
+                  >
+                    <Text style={{ fontFamily: FONTS.bodyBold, fontSize: 14, color: selected ? accent : DARK.textDim }}>
+                      {l === 'es' ? t('settings.spanish') : t('settings.english')}
                     </Text>
                   </View>
                 </Pressable>

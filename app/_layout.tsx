@@ -3,8 +3,7 @@
  */
 import '../global.css';
 import 'react-native-url-polyfill/auto';
-import '../src/i18n'; // fija el idioma según el dispositivo al arrancar
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +23,7 @@ import { SessionProvider, useSession } from '../src/store/session';
 import { DialogProvider } from '../src/components/Dialog';
 import { hasFullAccess } from '../src/lib/streak';
 import { DARK } from '../src/constants/theme';
+import { loadSavedLocale, subscribeLocale } from '../src/i18n';
 
 function NavigationGuard({ children }: { children: React.ReactNode }) {
   const { loading, session, profile, isGuest } = useSession();
@@ -81,12 +81,20 @@ export default function RootLayout() {
     Nunito_800ExtraBold,
   });
 
+  // t() no es reactivo: cuando el usuario cambia el idioma a mano en Ajustes,
+  // forzamos un remount de todo el árbol (key) para que los textos se actualicen.
+  const [localeTick, setLocaleTick] = useState(0);
+  useEffect(() => {
+    loadSavedLocale().then(() => setLocaleTick((n) => n + 1));
+    return subscribeLocale(() => setLocaleTick((n) => n + 1));
+  }, []);
+
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: DARK.bg }} />;
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} key={localeTick}>
       <SafeAreaProvider>
         <SessionProvider>
           <DialogProvider>
