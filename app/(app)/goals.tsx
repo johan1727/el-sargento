@@ -25,6 +25,7 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { useDialog } from '../../src/components/Dialog';
 import { GoalSuggestions } from '../../src/components/GoalSuggestions';
 import { Skeleton } from '../../src/components/Skeleton';
+import { NetworkError } from '../../src/components/NetworkError';
 import { t } from '../../src/i18n';
 import { DARK, FONTS, RADIUS } from '../../src/constants/theme';
 
@@ -53,17 +54,25 @@ export default function GoalsScreen() {
   const accent = character.theme.accent;
   const [goals, setGoals] = useState<GoalWithRate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const raw = await getActiveGoals(user.id);
-    const withRates = await Promise.all(
-      raw.map(async (g) => ({ ...g, rate7: await getCompletionRate(user.id, g.id, 7, g.created_at) })),
-    );
-    setGoals(withRates);
-    setLoading(false);
+    setLoadError(false);
+    try {
+      const raw = await getActiveGoals(user.id);
+      const withRates = await Promise.all(
+        raw.map(async (g) => ({ ...g, rate7: await getCompletionRate(user.id, g.id, 7, g.created_at) })),
+      );
+      setGoals(withRates);
+      setLoading(false);
+    } catch (err) {
+      if (__DEV__) console.warn('[goals] load error', err);
+      setLoading(false);
+      setLoadError(true);
+    }
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -75,9 +84,14 @@ export default function GoalsScreen() {
       return;
     }
     setAdding(true);
-    const g = await addGoal(user.id, newTitle.trim().slice(0, MAX_GOAL_LEN), 'habit');
-    setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
-    setNewTitle('');
+    try {
+      const g = await addGoal(user.id, newTitle.trim().slice(0, MAX_GOAL_LEN), 'habit');
+      setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
+      setNewTitle('');
+    } catch (err) {
+      if (__DEV__) console.warn('[goals] add error', err);
+      show({ icon: '📡', title: t('errors.networkTitle'), message: t('errors.networkBody'), accent });
+    }
     setAdding(false);
   };
 
@@ -86,8 +100,13 @@ export default function GoalsScreen() {
     if (!user || adding || goals.length >= 5) return;
     if (goals.some((g) => g.title === text)) return;
     setAdding(true);
-    const g = await addGoal(user.id, text.slice(0, MAX_GOAL_LEN), 'habit');
-    setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
+    try {
+      const g = await addGoal(user.id, text.slice(0, MAX_GOAL_LEN), 'habit');
+      setGoals((prev) => [...prev, { ...g, rate7: 0 }]);
+    } catch (err) {
+      if (__DEV__) console.warn('[goals] addSuggestion error', err);
+      show({ icon: '📡', title: t('errors.networkTitle'), message: t('errors.networkBody'), accent });
+    }
     setAdding(false);
   };
 
@@ -101,13 +120,28 @@ export default function GoalsScreen() {
           text: t('goals.deactivate'),
           style: 'destructive',
           onPress: async () => {
-            await deactivateGoal(goal.id);
+            try {
+              await deactivateGoal(goal.id);
+            } catch (err) {
+              if (__DEV__) console.warn('[goals] remove error', err);
+              show({ icon: '📡', title: t('errors.networkTitle'), message: t('errors.networkBody'), accent });
+              return;
+            }
             setGoals((prev) => prev.filter((g) => g.id !== goal.id));
           },
         },
       ],
     });
   };
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }} edges={['top']}>
+        <SergeantHeader character={character} subtitle={t('goals.subtitle')} />
+        <NetworkError accent={accent} onRetry={() => { setLoading(true); load(); }} />
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (

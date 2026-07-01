@@ -153,8 +153,10 @@ pon un contacto/empresa reales antes de publicar.
 
 `transcribeAudio(uri)` en `src/lib/gemini.ts` manda el audio grabado a Gemini
 multimodal (vía el mismo proxy `sergeant-reply`) y devuelve el texto, que el chat
-envía como mensaje. Caveat: el preset HIGH_QUALITY produce m4a/aac; si Gemini rechaza
-el `mimeType 'audio/mp4'`, prueba `'audio/aac'`.
+envía como mensaje. Prueba `mimeType: 'audio/mp4'` primero y si falla o devuelve
+vacío reintenta automáticamente con `'audio/aac'` (el preset HIGH_QUALITY de
+expo-av produce m4a/aac y no se pudo validar en dispositivo real cuál acepta
+Gemini, así que el código soporta ambos).
 
 ## Compras (RevenueCat)
 
@@ -164,12 +166,44 @@ el `mimeType 'audio/mp4'`, prueba `'audio/aac'`.
   Pasos para activar dentro del archivo. El cliente debe `Purchases.logIn(supabaseUserId)`
   para que `app_user_id` == id de Supabase.
 
+## Avatares e insignias (ilustrados, generados con Canva)
+
+- **Avatares de los 4 sargentos**: `assets/sargentos/<id>.png`, activados en
+  `SergeantAvatar.tsx` (`AVATARS` map + `<Image resizeMode="cover">`, círculo vía
+  `borderRadius`). Fallback a emoji si algún sargento nuevo no tiene PNG.
+- **Insignias de los 6 rangos**: `assets/ranks/<id>.png`, vía componente
+  `RankIcon` (imagen con fallback a emoji) usado en `RankBadge.tsx`, `ranks.tsx`
+  (rango actual + timeline, solo si `isReached`) y `celebration.tsx` (badge grande
+  animada). El emoji (`rank.badge`) sigue viviendo en `ranks.ts` para contextos de
+  texto plano (celebración de fondo, strings interpolados) donde no cabe una imagen.
+- Prompts de referencia para regenerar cualquiera: `assets/sargentos/PROMPTS.md`.
+
+## Build (EAS)
+
+`eas.json` con perfiles `development` (dev client, key directa), `preview` y
+`production` (ambos con `EXPO_PUBLIC_GEMINI_VIA_EDGE=true`). Falta: cuenta de EAS
+vinculada (`eas login` / `eas build:configure`) — el archivo de config ya existe
+pero no se ha corrido ningún build real.
+
+## Manejo de errores
+
+- **`ErrorBoundary`** (`src/components/ErrorBoundary.tsx`) envuelve todo el árbol en
+  el root layout — un crash de render muestra pantalla en personaje con reintentar,
+  en vez de blanco total.
+- **Errores de red**: Cuartel y Metas tenían un bug real — si `loadGoals`/`getActiveGoals`
+  fallaba, `setLoading(false)` nunca corría y la skeleton se quedaba para siempre. Ambas
+  pantallas ahora capturan el error y muestran `NetworkError` (retry). `handleToggle`/
+  `handleAdd`/`handleRemove` también capturan fallos de red con diálogo + revert del
+  optimistic update donde aplica.
+
 ## TODOs de producto restantes
 
-- Avatares reales de los 4 sargentos: PNG en `assets/sargentos/<id>.png`, luego
-  descomentar la rama `<Image>` en `src/components/SergeantAvatar.tsx`.
 - Activar RevenueCat real (instalar SDK + productos en las tiendas) — ver `purchases.ts`.
-- Poner `EXPO_PUBLIC_GEMINI_VIA_EDGE=true` y quitar la key del bundle en el build de prod.
+- Vincular cuenta de EAS y correr un build real (development client) para probar en
+  dispositivo físico — STT y voces en vivo no se han probado fuera de web.
+- `npm audit` reporta 15 vulnerabilidades (14 moderate, 1 high) todas resueltas solo
+  saltando Expo SDK 53→57 (4 versiones mayores) — deliberadamente NO se tocó; es un
+  cambio grande que necesita su propio ciclo de testing, no forma parte de limpieza.
 
 ## i18n (español / inglés)
 

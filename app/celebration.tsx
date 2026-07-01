@@ -14,6 +14,7 @@ import { useSession } from '../src/store/session';
 import { getCharacter } from '../src/constants/characters';
 import { ComicButton } from '../src/components/ComicButton';
 import { SergeantAvatar } from '../src/components/SergeantAvatar';
+import { RankIcon } from '../src/components/RankIcon';
 import { Card } from '../src/components/Card';
 import { DARK, FONTS, RADIUS, accentGlow, tint } from '../src/constants/theme';
 
@@ -94,23 +95,13 @@ export default function CelebrationScreen() {
 
         {/* Badge animada */}
         <Animated.View style={{ transform: [{ scale: popAnim }, { translateY: bounceAnim }], marginBottom: 18 }}>
-          <View
-            style={[
-              {
-                width: 130,
-                height: 130,
-                borderRadius: 65,
-                backgroundColor: r.color,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 3,
-                borderColor: accent,
-              },
-              accentGlow(accent, 2),
-            ]}
-          >
-            <Text style={{ fontSize: 60 }}>{r.badge}</Text>
-          </View>
+          <RankIcon
+            id={r.id}
+            emoji={r.badge}
+            size={130}
+            color={r.color}
+            style={[{ borderWidth: 3, borderColor: accent }, accentGlow(accent, 2)]}
+          />
         </Animated.View>
 
         <Text style={{ fontFamily: FONTS.display, fontSize: 46, color: DARK.text, letterSpacing: 2, marginBottom: 8, textAlign: 'center' }}>

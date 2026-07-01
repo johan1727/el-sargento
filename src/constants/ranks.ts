@@ -20,7 +20,9 @@ export interface Rank {
   label: string;
   /** nombre del rango en inglés */
   labelEn: string;
-  /** insignia placeholder (emoji) — TODO: reemplazar con insignia ilustrada */
+  /** emoji de la insignia — usado como fallback y en contextos de texto plano
+   * (celebración, strings interpolados). La versión ilustrada vive en
+   * assets/ranks/<id>.png y se renderiza vía RankIcon. */
   badge: string;
   /** racha mínima para alcanzar este rango */
   minStreak: number;

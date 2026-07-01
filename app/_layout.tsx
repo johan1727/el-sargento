@@ -21,6 +21,7 @@ import {
 
 import { SessionProvider, useSession } from '../src/store/session';
 import { DialogProvider } from '../src/components/Dialog';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { hasFullAccess } from '../src/lib/streak';
 import { DARK } from '../src/constants/theme';
 import { loadSavedLocale, subscribeLocale } from '../src/i18n';
@@ -96,14 +97,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} key={localeTick}>
       <SafeAreaProvider>
-        <SessionProvider>
-          <DialogProvider>
-            <StatusBar style="light" />
-            <NavigationGuard>
-              <Slot />
-            </NavigationGuard>
-          </DialogProvider>
-        </SessionProvider>
+        <ErrorBoundary>
+          <SessionProvider>
+            <DialogProvider>
+              <StatusBar style="light" />
+              <NavigationGuard>
+                <Slot />
+              </NavigationGuard>
+            </DialogProvider>
+          </SessionProvider>
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

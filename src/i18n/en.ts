@@ -13,6 +13,14 @@ export const en = {
     or: 'OR',
     lastUpdated: 'Last updated',
   },
+  errors: {
+    crashTitle: 'TAKE COVER, RECRUIT!',
+    crashBody: "Something blew up in the trench. Not your fault — try again.",
+    crashRetry: 'RETRY',
+    networkTitle: 'No signal',
+    networkBody: "Couldn't reach the base. Check your connection and try again.",
+    retry: 'Retry',
+  },
   onboarding: {
     subtitle: 'Military productivity coach',
     step: '{n} / 4',

@@ -12,6 +12,7 @@ import { t } from '../../src/i18n';
 import { SergeantHeader } from '../../src/components/SergeantHeader';
 import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
+import { RankIcon } from '../../src/components/RankIcon';
 import { DARK, FONTS, RADIUS, accentGlow, softShadow, tint } from '../../src/constants/theme';
 
 export default function RanksScreen() {
@@ -35,23 +36,13 @@ export default function RanksScreen() {
           </Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-            <View
-              style={[
-                {
-                  width: 76,
-                  height: 76,
-                  borderRadius: 38,
-                  backgroundColor: currentRank.color,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 2,
-                  borderColor: accent,
-                },
-                accentGlow(accent, 1),
-              ]}
-            >
-              <Text style={{ fontSize: 38 }}>{currentRank.badge}</Text>
-            </View>
+            <RankIcon
+              id={currentRank.id}
+              emoji={currentRank.badge}
+              size={76}
+              color={currentRank.color}
+              style={[{ borderWidth: 2, borderColor: accent }, accentGlow(accent, 1)]}
+            />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: FONTS.display, fontSize: 36, color: DARK.text, letterSpacing: 1, lineHeight: 38 }}>
                 {rankLabel(currentRank).toUpperCase()}
@@ -96,26 +87,34 @@ export default function RanksScreen() {
               <View key={rank.id} style={{ flexDirection: 'row', alignItems: 'stretch' }}>
                 {/* Timeline: badge + línea */}
                 <View style={{ width: 56, alignItems: 'center' }}>
-                  <View
-                    style={[
-                      {
+                  {isReached ? (
+                    <RankIcon
+                      id={rank.id}
+                      emoji={rank.badge}
+                      size={50}
+                      color={rank.color}
+                      style={[
+                        { borderWidth: isCurrent ? 2 : 1, borderColor: isCurrent ? accent : DARK.hairlineStrong, zIndex: 2 },
+                        isCurrent ? accentGlow(accent, 1) : softShadow(1),
+                      ]}
+                    />
+                  ) : (
+                    <View
+                      style={{
                         width: 50,
                         height: 50,
                         borderRadius: 25,
-                        backgroundColor: isReached ? rank.color : DARK.surfaceAlt,
+                        backgroundColor: DARK.surfaceAlt,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderWidth: isCurrent ? 2 : 1,
-                        borderColor: isCurrent ? accent : DARK.hairlineStrong,
+                        borderWidth: 1,
+                        borderColor: DARK.hairlineStrong,
                         zIndex: 2,
-                      },
-                      isCurrent ? accentGlow(accent, 1) : isReached ? softShadow(1) : null,
-                    ]}
-                  >
-                    <Text style={{ fontSize: isReached ? 24 : 18, opacity: isReached ? 1 : 0.4 }}>
-                      {isReached ? rank.badge : '🔒'}
-                    </Text>
-                  </View>
+                      }}
+                    >
+                      <Text style={{ fontSize: 18, opacity: 0.4 }}>🔒</Text>
+                    </View>
+                  )}
                   {!isLast ? (
                     <View
                       style={{

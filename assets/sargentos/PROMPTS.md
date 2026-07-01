@@ -1,22 +1,11 @@
 # Avatares de los 4 sargentos
 
-Genera 4 PNG **cuadrados** (recomendado 512×512), **mismo estilo** (cómic / cel-shaded,
-contornos negros gruesos, colores planos saturados), encuadre cabeza-y-hombros,
-personaje centrado de frente, **fondo sólido** del color del sargento, **SIN texto**.
+✅ **Generados** (2026-06-30) con Canva (`generate-design` → `create-design-from-candidate`
+→ `export-design` PNG 512×512) y activados en `SergeantAvatar.tsx`. Los prompts abajo
+quedan como referencia por si quieres regenerar alguno con mejor calidad o variar la pose.
 
-Guárdalos exactamente como:
-
-- `assets/sargentos/gomez.png`
-- `assets/sargentos/rex.png`
-- `assets/sargentos/valentina.png`
-- `assets/sargentos/fabianski.png`
-
-Luego, en `src/components/SergeantAvatar.tsx`, descomenta el bloque `AVATARS` con los
-`require(...)` (ya está listo, son 4 líneas). El componente usa el PNG automáticamente.
-
-> Nota: Canva (`generate-design`) estaba en **límite de cuota** al intentarlo. Cuando se
-> reponga tu cupo, puedo generarlos yo con la integración de Canva. También sirve
-> cualquier generador (Magic Media, etc.) con estos prompts.
+Para regenerar uno: usa el mismo prompt, exporta 512×512 PNG, sobrescribe el archivo en
+`assets/sargentos/<id>.png` — no hace falta tocar código, el `require()` ya está cableado.
 
 ---
 

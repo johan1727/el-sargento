@@ -1,7 +1,10 @@
 /**
  * Tipos de la base de datos (Supabase).
- * Espejo manual de supabase/migrations/001_init.sql.
- * TODO: regenerar con `npx supabase gen types typescript` cuando esté el CLI ligado.
+ * Espejo manual de supabase/migrations/001_init.sql, verificado columna por columna
+ * contra `supabase gen types typescript` (sin drift al 2026-06-30). Los tipos aquí
+ * son deliberadamente más estrictos que el esquema real (non-null, unions estrechas
+ * como SergeantId/RankId) porque triggers/defaults en la BD garantizan esos valores
+ * en la práctica. Si agregas una columna nueva, actualiza esta interfaz a mano.
  */
 
 import type { SergeantId } from '../constants/characters';

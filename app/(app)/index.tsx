@@ -43,17 +43,21 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { WeekStrip } from '../../src/components/WeekStrip';
 import { SergeantAvatar } from '../../src/components/SergeantAvatar';
 import { Skeleton } from '../../src/components/Skeleton';
+import { NetworkError } from '../../src/components/NetworkError';
+import { useDialog } from '../../src/components/Dialog';
 import { t, appLocale } from '../../src/i18n';
 import { DARK, FONTS, RADIUS, accentGlow, greetingForHour, tint } from '../../src/constants/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { profile, user, patchProfile, isGuest } = useSession();
+  const { show } = useDialog();
   const character = getCharacter(profile?.chosen_sergeant);
   const accent = character.theme.accent;
   const [goals, setGoals] = useState<GoalWithToday[]>([]);
   const [activeDays, setActiveDays] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [reaction, setReaction] = useState<string | null>(null);
@@ -69,12 +73,10 @@ export default function HomeScreen() {
     setActiveDays(active);
   }, [user]);
 
-  const didInit = useRef(false);
-  useEffect(() => {
-    if (!user || !profile || didInit.current) return;
-    didInit.current = true;
-
-    (async () => {
+  const runInit = useCallback(async () => {
+    if (!user || !profile) return;
+    setLoadError(false);
+    try {
       const demotion = checkDemotion(profile);
       if (demotion.update) {
         const updated = await updateProfile(user.id, demotion.update);
@@ -102,12 +104,28 @@ export default function HomeScreen() {
           )).text;
       setGreeting(greetingText);
       setReactionLoading(false);
-    })();
+    } catch (err) {
+      if (__DEV__) console.warn('[home] init error', err);
+      setLoading(false);
+      setLoadError(true);
+    }
   }, [user, profile, loadGoals, patchProfile, isGuest]);
+
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (!user || !profile || didInit.current) return;
+    didInit.current = true;
+    runInit();
+  }, [user, profile, runInit]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadGoals();
+    try {
+      await loadGoals();
+      setLoadError(false);
+    } catch (err) {
+      if (__DEV__) console.warn('[home] refresh error', err);
+    }
     setRefreshing(false);
   };
 
@@ -124,22 +142,36 @@ export default function HomeScreen() {
       ),
     );
 
-    await setCheckin(user.id, goal.id, nowCompleted);
+    try {
+      await setCheckin(user.id, goal.id, nowCompleted);
 
-    if (nowCompleted) {
-      const anyDone = await hasAnyCompletionToday(user.id);
-      if (anyDone) {
-        const streakUpdate = streakAfterCompletion(profile);
-        const oldRank = profile.rank;
-        const newRank = rankForStreak(streakUpdate.current_streak).id;
-        if (streakUpdate.last_checkin_date !== profile.last_checkin_date) {
-          const updated = await updateProfile(user.id, streakUpdate);
-          patchProfile(updated);
-          if (rankDelta(oldRank, newRank) === 'up') {
-            router.push({ pathname: '/celebration', params: { rank: newRank } } as any);
+      if (nowCompleted) {
+        const anyDone = await hasAnyCompletionToday(user.id);
+        if (anyDone) {
+          const streakUpdate = streakAfterCompletion(profile);
+          const oldRank = profile.rank;
+          const newRank = rankForStreak(streakUpdate.current_streak).id;
+          if (streakUpdate.last_checkin_date !== profile.last_checkin_date) {
+            const updated = await updateProfile(user.id, streakUpdate);
+            patchProfile(updated);
+            if (rankDelta(oldRank, newRank) === 'up') {
+              router.push({ pathname: '/celebration', params: { rank: newRank } } as any);
+            }
           }
         }
       }
+    } catch (err) {
+      // Revierte el check optimista: el servidor no confirmó el cambio.
+      if (__DEV__) console.warn('[home] checkin error', err);
+      setGoals((prev) =>
+        prev.map((g) =>
+          g.id === goal.id
+            ? { ...g, todayCheckin: { ...g.todayCheckin!, completed: wasCompleted } }
+            : g,
+        ),
+      );
+      show({ icon: '📡', title: t('errors.networkTitle'), message: t('errors.networkBody'), accent });
+      return;
     }
 
     setReactionLoading(true);
@@ -168,6 +200,14 @@ export default function HomeScreen() {
   const allDone = goals.length > 0 && completedCount === goals.length;
   const dayPct = goals.length ? (completedCount / goals.length) * 100 : 0;
   const streak = profile?.current_streak ?? 0;
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: DARK.bg }}>
+        <NetworkError accent={accent} onRetry={() => { setLoading(true); runInit(); }} />
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (

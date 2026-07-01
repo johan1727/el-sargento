@@ -1,7 +1,8 @@
 /** Insignia de rango + racha (🔥). Usada en headers y en /ranks — versión dark. */
 import { Text, View } from 'react-native';
-import { DARK, FONTS, RADIUS, softShadow } from '../constants/theme';
+import { DARK, FONTS, softShadow } from '../constants/theme';
 import { getRank, rankLabel, type RankId } from '../constants/ranks';
+import { RankIcon } from './RankIcon';
 import { t } from '../i18n';
 
 interface Props {
@@ -16,23 +17,13 @@ export function RankBadge({ rank, streak, compact }: Props) {
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <View
-        style={[
-          {
-            width: badgeSize,
-            height: badgeSize,
-            borderRadius: badgeSize / 2,
-            backgroundColor: r.color,
-            borderWidth: 1.5,
-            borderColor: DARK.hairlineStrong,
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          softShadow(1),
-        ]}
-      >
-        <Text style={{ fontSize: badgeSize * 0.48 }}>{r.badge}</Text>
-      </View>
+      <RankIcon
+        id={r.id}
+        emoji={r.badge}
+        size={badgeSize}
+        color={r.color}
+        style={[{ borderWidth: 1.5, borderColor: DARK.hairlineStrong }, softShadow(1)]}
+      />
       <View>
         <Text
           style={{

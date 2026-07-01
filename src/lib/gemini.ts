@@ -170,30 +170,42 @@ export async function generateSergeantReply(
  * Transcribe un archivo de audio a texto usando Gemini multimodal.
  * Devuelve null si no hay ruta a Gemini o si falla (el caller decide el fallback).
  *
- * NOTA: el preset HIGH_QUALITY de expo-av produce m4a/aac. Si Gemini rechaza el
- * mimeType, ajusta a 'audio/aac' o cambia el formato de grabación.
+ * El preset HIGH_QUALITY de expo-av produce m4a/aac; Gemini a veces acepta el
+ * contenedor como 'audio/mp4' y a veces lo rechaza pidiendo 'audio/aac'. Sin
+ * poder validar en cada dispositivo, probamos mp4 primero y reintentamos una
+ * vez con aac si falla — así funciona sin importar cuál acepte el backend.
  */
+async function transcribeWithMime(base64: string, mimeType: string): Promise<string> {
+  const payload = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: 'Transcribe este audio a texto en español de México. Devuelve SOLO la transcripción, sin comillas ni explicaciones.',
+          },
+          { inlineData: { mimeType, data: base64 } },
+        ],
+      },
+    ],
+    generationConfig: { temperature: 0, maxOutputTokens: 256 },
+  };
+  return callGemini(payload);
+}
+
 export async function transcribeAudio(uri: string): Promise<string | null> {
   if (!geminiAvailable()) return null;
   try {
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
-    const payload = {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: 'Transcribe este audio a texto en español de México. Devuelve SOLO la transcripción, sin comillas ni explicaciones.',
-            },
-            { inlineData: { mimeType: 'audio/mp4', data: base64 } },
-          ],
-        },
-      ],
-      generationConfig: { temperature: 0, maxOutputTokens: 256 },
-    };
-    const text = await callGemini(payload);
+    try {
+      const text = await transcribeWithMime(base64, 'audio/mp4');
+      if (text) return text;
+    } catch (err) {
+      if (__DEV__) console.warn('[gemini] transcribeAudio mp4 falló, reintentando con aac', err);
+    }
+    const text = await transcribeWithMime(base64, 'audio/aac');
     return text || null;
   } catch (err) {
     if (__DEV__) console.warn('[gemini] transcribeAudio', err);

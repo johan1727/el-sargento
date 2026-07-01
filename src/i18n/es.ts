@@ -13,6 +13,14 @@ export const es = {
     or: 'O',
     lastUpdated: 'Última actualización',
   },
+  errors: {
+    crashTitle: '¡A CUBIERTO, RECLUTA!',
+    crashBody: 'Algo tronó en la trinchera. No es tu culpa — intenta de nuevo.',
+    crashRetry: 'REINTENTAR',
+    networkTitle: 'Sin señal',
+    networkBody: 'No pudimos conectar con el cuartel. Revisa tu conexión e intenta de nuevo.',
+    retry: 'Reintentar',
+  },
   onboarding: {
     subtitle: 'Coach militar de productividad',
     step: '{n} / 4',
