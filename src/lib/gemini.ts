@@ -265,9 +265,3 @@ export function fallbackReply(
   return base;
 }
 
-/*
- * TODO (producción): mover a Supabase Edge Function.
- *   supabase/functions/sergeant-reply/index.ts recibe { sergeantId, history,
- *   userMessage, ctx }, usa GEMINI_API_KEY del entorno del servidor, y devuelve
- *   el texto. Así la API key nunca llega al cliente.
- */

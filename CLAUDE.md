@@ -185,7 +185,8 @@ arrancar: inglés si el cel está en inglés, español si no. Uso: `import { t }
   `FALLBACKS_EN`. Voces de muestra del onboarding: `assets/voices/<id>_en.wav` (0 API).
 - **Legal:** `privacy.tsx`/`terms.tsx` tienen objetos `ES`/`EN` y eligen por `appLocale()`.
 - Al agregar texto nuevo: añade la clave a AMBOS diccionarios y usa `t()`. No hardcodees
-  español en JSX. (No hay toggle manual en ajustes aún — solo detección por dispositivo.)
+  español en JSX. Hay toggle manual en Ajustes → Idioma (`setAppLocale`, persiste en
+  AsyncStorage, fuerza remount vía `subscribeLocale` porque `t()` no es reactivo).
 
 ## Convenciones
 
