@@ -4,7 +4,8 @@
       "Read(*)",
       "Write(*)",
       "Edit(*)",
-      "Bash(*)"
+      "Bash(*)",
+      "mcp__claude_ai_Supabase__get_advisors"
     ]
   }
 }
